@@ -1,0 +1,36 @@
+"""Entry point."""
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+from . import __version__
+from .config import APP_ID, APP_NAME, Settings, autodetect
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog=APP_ID, description=f"{APP_NAME}: LOTRO launcher for Linux")
+    ap.add_argument("--version", action="version", version=__version__)
+    ap.parse_args()
+
+    from .hostenv import isolate_bundled_qt
+    isolate_bundled_qt()
+    from PySide6.QtWidgets import QApplication
+
+    from .ui import theme
+    from .ui.context import AppContext
+    from .ui.main_window import MainWindow
+
+    app = QApplication(sys.argv)
+    app.setApplicationName(APP_NAME)
+    app.setDesktopFileName(APP_ID)
+    theme.apply(app)
+
+    settings = Settings.load()
+    notes = autodetect(settings)
+    settings.save()
+    ctx = AppContext(settings)
+    win = MainWindow(ctx, notes)
+    win.show()
+    return app.exec()

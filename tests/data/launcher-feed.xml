@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<rss version="2.0" xml:base="https://www.lotro.com/en/launcher-feed" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:og="http://ogp.me/ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:sioc="http://rdfs.org/sioc/ns#" xmlns:sioct="http://rdfs.org/sioc/types#" xmlns:skos="http://www.w3.org/2004/02/skos/core#" xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+    <channel>
+        <title>Launcher Feed</title>
+        <link>https://www.lotro.com/en/launcher-feed</link>
+        <description></description>
+        <language>en</language>
+                                    <item>
+                    <title>Schedule Update for Angmar and Mordor</title>
+                    <link>https://www.lotro.com/news/lotro-angmar-mordor-schedule-update-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;span data-contrast=&quot;auto&quot;&gt;We are increasing wraith spawns, adding new rewards, and shifting free transfers to January. &lt;a href=&quot;https://www.lotro.com/news/lotro-angmar-mordor-schedule-update-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Read more on LOTRO.com&lt;/a&gt;.&lt;/span&gt;&lt;/p&gt;</description>
+                    <pubDate>Fri, 06 Nov 2026 01:47:00 -0800</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-angmar-mordor-schedule-update-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Sales: November 5th - 12th</title>
+                    <link>https://www.lotro.com/news/lotro-sales-110526-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;strong&gt;Unleash Your Potential! Get 20% off:&lt;/strong&gt;&lt;br /&gt;Deed Boosts&lt;br /&gt;Universal Solvents&lt;br /&gt;Universal Morale and Power Potions&lt;br /&gt;Now through November 12th!&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Weekly Coupon:&lt;/strong&gt;&lt;br /&gt;Battle Potion of Restoration&lt;br /&gt;Coupon Code: WARMFEELING&lt;br /&gt;Now through November 12th!&lt;/p&gt;</description>
+                    <pubDate>Thu, 05 Nov 2026 00:07:00 -0800</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-sales-110526-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Filbert Fig has arrived with new items &#8211; also available in Lootboxes!&#160;</title>
+                    <link>https://www.lotro.com/news/lotro-filbert-fig-update-nov-26-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/news/lotro-filbert-fig-update-nov-26-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;See the list and where to get new and returning items from Filbert Fig and Adventurer&#8217;s and Traveller&#8217;s Steel-bound Lootboxes on LOTRO.com.&#160;&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Wed, 04 Nov 2026 03:46:00 -0800</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-filbert-fig-update-nov-26-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Update 50.1 Release Notes</title>
+                    <link>https://www.lotro.com/update-notes/lotro-update-50-1-release-notes-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/update-notes/lotro-update-50-1-release-notes-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Here are the Release Notes for Update 50.1: The Wolves of Mordor, Patch 1 released on Wednesday, Nov 4, 2026.&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 03 Nov 2026 04:41:00 -0800</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/update-notes/lotro-update-50-1-release-notes-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Team Standing Stone Games and Extra Life 2026!</title>
+                    <link>https://www.lotro.com/news/lotro-extra-life-2026-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/news/lotro-extra-life-2026-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Learn more about our annual effort to raise funds for the Boston Children&#8217;s Hospital and other Children&#8217;s Miracle Network hospitals!&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 03 Nov 2026 03:55:00 -0800</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-extra-life-2026-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Update 50 Release Notes</title>
+                    <link>https://www.lotro.com/update-notes/lotro-update-50-release-notes-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/update-notes/lotro-update-50-release-notes-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Here are the Release Notes for Update 50: The Wolves of Mordor, released on Wednesday, October 28th, 2026.&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 27 Oct 2026 03:36:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/update-notes/lotro-update-50-release-notes-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>The Feared Beasts of Draugardh!</title>
+                    <link>https://www.lotro.com/news/lotro-beasts-of-draugardh-en?locale=en_US</link>
+                    <description>&lt;p&gt;Rumors have spread of wolf-revering Easterlings and figures long forgotten living in the secluded areas beyond Mordor. &lt;a href=&quot;https://www.lotro.com/news/lotro-beasts-of-draugardh-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Learn more about your upcoming enemies in The Wolves of Mordor here!&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 27 Oct 2026 01:22:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-beasts-of-draugardh-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Update 49.8 Release Notes</title>
+                    <link>https://www.lotro.com/update-notes/lotro-update-49-8-release-notes-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/update-notes/lotro-update-49-8-release-notes-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Here are the release notes for Update 49.8, released on Wednesday, October 14th, 2026.&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 13 Oct 2026 11:00:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/update-notes/lotro-update-49-8-release-notes-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Guide to the Harvestmath Festival</title>
+                    <link>https://www.lotro.com/guides/lotro-harvestmath-festival-guide-en?locale=en_US</link>
+                    <description>&lt;p&gt;The final crops of the year&apos;s harvest are ripe for enjoyment, which means it is the perfect time for the Harvestmath Festival! &lt;a href=&quot;https://www.lotro.com/guides/lotro-harvestmath-festival-guide-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Read more about this annual event in our guide&lt;/a&gt;.&lt;/p&gt;</description>
+                    <pubDate>Wed, 07 Oct 2026 07:00:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/guides/lotro-harvestmath-festival-guide-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Update 49.7 Release Notes</title>
+                    <link>https://www.lotro.com/update-notes/lotro-update-49-7-release-notes-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/update-notes/lotro-update-49-7-release-notes-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Here are the Release Notes for Update 49.7: In Good Company, Patch 7 released on Wednesday, October 07, 2026.&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 06 Oct 2026 14:00:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/update-notes/lotro-update-49-7-release-notes-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Addition to The Wolves of Mordor Expansion Pre-purchase</title>
+                    <link>https://www.lotro.com/news/lotro-wolves-of-mordor-level-up-en?locale=en_US</link>
+                    <description>&lt;p&gt;We are adding a level up package to your pre-purchase of The Wolves of Mordor following our next game update! &lt;a href=&quot;https://www.lotro.com/news/lotro-wolves-of-mordor-level-up-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Read more on LOTRO.com&lt;/a&gt;.&lt;/p&gt;</description>
+                    <pubDate>Mon, 05 Oct 2026 09:14:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-wolves-of-mordor-level-up-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Timing Guidance for The Wolves of Mordor</title>
+                    <link>https://www.lotro.com/news/lotro-wolves-of-mordor-release-timing-en?locale=en_US</link>
+                    <description>&lt;p&gt;We are writing today to update our guidance on release timing for our upcoming expansion &lt;a href=&quot;https://www.lotro.com/the-wolves-of-mordor&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;The Wolves of Mordor&lt;/a&gt;. We currently expect to release The Wolves of Mordor on Wednesday, October 28th, 2026. Thank you!&lt;/p&gt;</description>
+                    <pubDate>Mon, 05 Oct 2026 00:31:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-wolves-of-mordor-release-timing-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Survival Instincts in Draugardh</title>
+                    <link>https://www.lotro.com/guides/lotro-survival-instincts-guide-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/guides/lotro-survival-instincts-guide-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;In our second article&#8239;discussing the Survival Instincts feature&lt;/a&gt;&#8239;coming with&#8239;&lt;em&gt;The Wolves of Mordor&lt;/em&gt;&lt;em&gt;&#8239;&lt;/em&gt;expansion, we take a closer look at the abilities, how to acquire them, and how the new feature interacts with the content in &lt;em&gt;The Wolves of Mordor &lt;/em&gt;expansion.&#160;&#160;&lt;/p&gt;</description>
+                    <pubDate>Thu, 01 Oct 2026 04:34:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/guides/lotro-survival-instincts-guide-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Buried Treasure Event Guide</title>
+                    <link>https://www.lotro.com/guides/lotro-buried-treasure-event-guide-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/guides/lotro-buried-treasure-event-guide-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Learn more about the Buried Treasure event in our guide!&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Thu, 01 Oct 2026 03:45:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/guides/lotro-buried-treasure-event-guide-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>The Wolves of Mordor is now available to pre-purchase!</title>
+                    <link>https://www.lotro.com/news/lotro-wolves-prepurchase-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/the-wolves-of-mordor&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Read more about The Wolves of Mordor on LOTRO.com!&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Wed, 30 Sep 2026 08:08:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-wolves-prepurchase-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>The Wolves of Mordor Frequently Asked Questions</title>
+                    <link>https://www.lotro.com/news/lotro-the-wolves-of-mordor-faq-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/news/lotro-the-wolves-of-mordor-faq-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Get answers to your Frequently Asked Questions about The Wolves of Mordor here!&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Wed, 30 Sep 2026 04:29:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-the-wolves-of-mordor-faq-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Update 49.6 Release Notes</title>
+                    <link>https://www.lotro.com/update-notes/lotro-update-49-6-release-notes-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/update-notes/lotro-update-49-6-release-notes-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Here are the Release Notes for Update 49.6: In Good Company, Patch 6 released on Wednesday, September 30, 2026.&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 29 Sep 2026 05:04:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/update-notes/lotro-update-49-6-release-notes-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Friends for Life! A Deeper Dive Into the Neighbours System&#160;</title>
+                    <link>https://www.lotro.com/guides/lotro-neighbours-guide-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/guides/lotro-neighbours-guide-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;In our second article exploring the new Neighbours feature&lt;/a&gt; coming with &lt;em&gt;The Wolves of Mordor &lt;/em&gt;expansion, we take a closer look at how friendships grow. Learn how sharing stories, giving thoughtful gifts, and discovering each neighbour&#8217;s unique personality will help you build lasting relationships that evolve over time.&lt;/p&gt;</description>
+                    <pubDate>Wed, 23 Sep 2026 02:49:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/guides/lotro-neighbours-guide-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Baggins&#8217; Birthday Event Guide&#160;</title>
+                    <link>https://www.lotro.com/guides/lotro-baggins-birthday-guide-en?locale=en_US</link>
+                    <description>&lt;p&gt;The Baggins&#8217; Birthday Event is back! &lt;a href=&quot;https://www.lotro.com/news/lotro-baggins-birthday-guide-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Learn more in our guide on LOTRO.com&lt;/a&gt;.&lt;/p&gt;</description>
+                    <pubDate>Mon, 21 Sep 2026 01:17:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/guides/lotro-baggins-birthday-guide-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Tale of the Shipwrecked Mariners and Stowaway: The Old Man on the Shore Guides</title>
+                    <link>https://www.lotro.com/news/lotro-mariners-event-guide-en?locale=en_US</link>
+                    <description>&lt;p&gt;The Tale of the Shipwrecked Mariners and Stowaway: The Old Man on the Shore is back through September 22nd! &lt;a href=&quot;https://www.lotro.com/news/lotro-mariners-event-guide-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Get more information about these seasonal events and how to run them!&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Thu, 17 Sep 2026 04:27:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-mariners-event-guide-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>VIP Membership Price Adjustment</title>
+                    <link>https://www.lotro.com/news/lotro-vip-pricing-adjustment-en?locale=en_US</link>
+                    <description>&lt;p&gt;On October 14th, 2026, we will introduce an adjusted set of rates for 3-month, 6-month, and 12-month subscription plans. Our current 1-month subscription rate ($14.99) will not change. All existing subscribers from October 13th, 2026 or prior will continue their subscriptions at their existing rates through at least December 31, 2027. &lt;a href=&quot;https://www.lotro.com/news/lotro-vip-pricing-adjustment-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Get more information on LOTRO.com&lt;/a&gt;.&lt;/p&gt;</description>
+                    <pubDate>Wed, 16 Sep 2026 08:28:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-vip-pricing-adjustment-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Ringwraith Bug on Angmar and Mordor</title>
+                    <link>https://www.lotro.com/news/lotro-ringwraith-bug-en?locale=en_US</link>
+                    <description>&lt;p&gt;We have temporarily disabled the Ringwraith The Woe of Khand on Angmar and Mordor due to a bug. The Cursed Rider and The Witch-king remain available. We expect The Woe of Khand to return in the next game update.&lt;/p&gt;</description>
+                    <pubDate>Thu, 10 Sep 2026 03:37:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-ringwraith-bug-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>The Treasure Bugan Event Guide </title>
+                    <link>https://www.lotro.com/guides/lotro-treasure-bugan-guide-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/guides/lotro-treasure-bugan-guide-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;&lt;span class=&quot;TextRun SCXW125840921 BCX0&quot; lang=&quot;EN-US&quot; xml:lang=&quot;EN-US&quot; data-contrast=&quot;auto&quot;&gt;&lt;span class=&quot;NormalTextRun SCXW125840921 BCX0&quot;&gt;Learn about the Treasure &lt;/span&gt;&lt;span class=&quot;NormalTextRun SpellingErrorV2Themed SCXW125840921 BCX0&quot;&gt;Bugan&lt;/span&gt;&lt;span class=&quot;NormalTextRun SCXW125840921 BCX0&quot;&gt; event in our guide!&lt;/span&gt;&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Wed, 09 Sep 2026 00:57:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/guides/lotro-treasure-bugan-guide-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Update 49.5 Release Notes</title>
+                    <link>https://www.lotro.com/update-notes/lotro-update-49-5-release-notes-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/update-notes/lotro-update-49-5-release-notes-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Here are the Release Notes for Update 49.5: In Good Company, released on Wednesday, September 2nd, 2026.&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 01 Sep 2026 04:38:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/update-notes/lotro-update-49-5-release-notes-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>UPDATED: Release Timing for Angmar and Mordor&#8217;s Remaining Updates</title>
+                    <link>https://www.lotro.com/news/lotro-updated-angmar-mordor-timing-en?locale=en_US</link>
+                    <description>&lt;p&gt;We have been carefully listening to your feedback on our schedule for Angmar and Mordor and we have updated the timing for these Legendary Worlds. &lt;a href=&quot;https://www.lotro.com/news/lotro-updated-angmar-mordor-timing-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;See the schedule on LOTRO.com.&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Thu, 20 Aug 2026 03:52:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-updated-angmar-mordor-timing-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Available For A Limited Time &#8211; Patron&apos;s Coffer of Promised Allies</title>
+                    <link>https://www.lotro.com/news/lotro-patrons-coffer-promised-allies-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/news/lotro-patrons-coffer-promised-allies-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Read more about the Patron&apos;s Coffer of Promised Allies here! Available in the LOTRO Store through November 4&lt;sup&gt;th&lt;/sup&gt;, 2026!&#160;&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Thu, 20 Aug 2026 00:03:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-patrons-coffer-promised-allies-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Update 49.4 Release Notes</title>
+                    <link>https://www.lotro.com/update-notes/lotro-update-49-4-release-notes-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/update-notes/lotro-update-49-4-release-notes-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Here are the Release Notes for Update 49.4: In Good Company, Patch 4 released on Wednesday, August 19, 2026.&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Tue, 18 Aug 2026 06:02:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/update-notes/lotro-update-49-4-release-notes-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>The Farmers Faire Guide</title>
+                    <link>https://www.lotro.com/guides/lotro-farmers-faire-guide-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/guides/lotro-farmers-faire-guide-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Get started celebrating summer in Middle-earth in our guide to the Farmers Faire!&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Starts 10:00 AM Eastern (-4 GMT) on August 13th and runs until 3:00 AM Eastern (-4 GMT) on September 8th.&lt;/p&gt;</description>
+                    <pubDate>Thu, 13 Aug 2026 03:04:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/guides/lotro-farmers-faire-guide-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>Patron&apos;s Coffer of the Noldor Owners and New Titles</title>
+                    <link>https://www.lotro.com/news/lotro-title-bug-fix-en?locale=en_US</link>
+                    <description>&lt;p&gt;Players who purchased the Patron&apos;s Coffer of the Noldor may have noticed some new titles that were not intended for release at this time. &lt;a href=&quot;https://www.lotro.com/news/lotro-title-bug-fix-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Read more to see what your new titles will be!&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Thu, 13 Aug 2026 00:54:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-title-bug-fix-en?locale=en_US</guid>
+                </item>
+                            <item>
+                    <title>The Lord of the Rings Online x Magic Online are celebrating together!&#160;</title>
+                    <link>https://www.lotro.com/news/lotro-mtgo-promotion-2026-en?locale=en_US</link>
+                    <description>&lt;p&gt;&lt;a href=&quot;https://www.lotro.com/news/lotro-mtgo-promotion-2026-en&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;&lt;span data-contrast=&quot;auto&quot;&gt;Read more about a special invitation to play Magic Online for LOTRO players, and a welcome gift for all LOTRO players!&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;</description>
+                    <pubDate>Wed, 12 Aug 2026 07:33:00 -0700</pubDate>
+                    <dc:creator>Standing Stone Games</dc:creator>
+                    <guid isPermaLink="false">https://www.lotro.com/news/lotro-mtgo-promotion-2026-en?locale=en_US</guid>
+                </item>
+                        </channel>
+</rss>
+

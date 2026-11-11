@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <appSettings>
+
+    <!-- Launcher Configurations -->
+    <add key="LauncherConfig.DateTime" value="3/31/10 1:55 AM"/>
+    <add key="LauncherConfig.RefreshFrequency" value="15"/> <!-- minutes -->
+    <add key="LauncherConfig.SubscriptionRefreshFrequency" value="15"/>
+    
+    <!-- Authentication -->
+    <add key="GameName" value="LOTRO"/>
+	<add key="EnableStayLoggedInFeature" value="false" />
+
+    <!-- World List -->
+    <add key="WorldUpdateRate" value="1"/>              <!-- minutes -->
+
+    <!-- Game client launching -->
+    <add key="GameClient.WIN32.Filename" value="lotroclient.exe"/>
+	<add key="GameClient.WIN64.Filename" value="lotroclient64.exe" />
+    <add key="GameClient.WIN32.ArgTemplate" value="-a {SUBSCRIPTION} -h {LOGIN} --glsticketdirect {GLS} --chatserver {CHAT} --rodat on --language {LANG} --gametype LOTRO --authserverurl {AUTHSERVERURL} --glsticketlifetime {GLSTICKETLIFETIME}"/>
+
+	<add key="GameClient.WIN32Legacy.Filename" value="lotroclient_awesomium.exe" />
+     
+    <add key="GameClient.Arg.crashreceiver" value="http://crash.lotro.com:8080/CrashReceiver-1.0"/>
+    <add key="GameClient.Arg.DefaultUploadThrottleMbps" value="1"/>    
+    <add key="GameClient.Arg.authserverurl" value="https://gls.lotro.com/gls.authserver/service.asmx"/>
+    <add key="GameClient.Arg.glsticketlifetime" value="21600"/>
+    
+    <add key="GameClient.ResetGraphicsArg" value=" --safe"/>
+    <add key="GameClient.AlwaysPatchHighRes" value="true"/>
+    <add key="Subscription.FreeToPlay" value="true"/>
+    <!-- Patching -->
+    <add key="Patching.ProductCode" value="LOTRO"/>
+    <add key="PatchWindow" value="30"/>                 <!-- minutes -->
+    <add key="PatchConnectRetryInterval" value="1"/>    <!-- minutes -->
+    <add key="DisablePatch" value="false"/>
+    <add key="RandomWorldList" value="false"/>
+    
+    <!-- Standalone Updater -->
+    <add key="GameClient.RequiredVersion" value="0.0"/>
+    <add key="GameClient.ForwardVersion" value="0.0"/>
+    <add key="URL.UpdateDownload" value="http://downloads.turbine.com" />
+    <add key="Patch.UpdaterNameFormat" value="{0}updater_{1}_{2}.exe" />
+    <add key="DataCenterBrowser.BatchWorldStatus" value="true" />
+
+    <!-- Account / e-Commerce -->
+    <add key="URL.Account" value="https://myaccount.standingstonegames.com/?billing[target_lang]={lang}" />
+    <add key="URL.Account.Post" value="https://myaccount.standingstonegames.com/?page_id=29&amp;billing[target_lang]={lang}"/>
+    <add key="Format.Account.Login" value=""/>
+    <add key="URL.NewAccount.Steam" value="http://live.lotro.com/sites/launcher/lotro/redirects/NewAccountSteam.php?lang={lang}" />
+    <add key="Activate.Account.BuyNow" value="false"/>
+    <add key="Format.Account.Login" value="siteuser[action]=glslogin&amp;billing[process]=1&amp;billing[username]={user}&amp;gls[subName]={sub}&amp;gls[ticket]={ticket}" />
+    <add key="Format.Account.Reactivate" value="siteuser[action]=glslogin&amp;billing[process]=10&amp;billing[scenario]=LOTRO_BUY_NOW_POPUP&amp;billing[forms][productCode]=LOTRO&amp;billing[username]={user}&amp;billing[forms][subscriptionName]={sub}&amp;gls[subName]={sub}&amp;gls[ticket]={ticket}" />
+    <add key="Format.Account.BuyNow" value="siteuser[action]=glslogin&amp;billing[process]=17&amp;billing[scenario]=LOTRO_BUY_NOW_POPUP&amp;billing[forms][productCode]=LOTRO&amp;billing[forms][purchaseProductCode]=LOTROBuy&amp;billing[forms][purchasePlanCode]=LOTRO-F2PUp&amp;billing[username]={user}&amp;billing[forms][subscriptionName]={sub}&amp;gls[subName]={sub}&amp;gls[ticket]={ticket}" />
+    <add key="Activate.Account.VIPDisplay" value="true"/>
+    <add key="VIPTokenList" value="AngmarStd,MoriaStd,WSSB,WSCS,WSCS_2,MirkStd,F2PLOTROUp" />
+    <add key="Activate.Account.DaysLeft" value="true"/>
+    <add key="Threshold.Account.DaysLeft" value="30"/>
+    <add key="ConvertedTokenList" value="AngmarStd,MoriaStd,WSSB,WSCS,WSCS_2,MirkStd,F2PLOTROUp" />
+
+    <add key="URL.NewAccount" value="http://live.lotro.com/sites/launcher/lotro/redirects/NewAccount.php?lang={lang}" />
+    <add key="URL.ForgotPassword" value="https://myaccount.standingstonegames.com/?page_id=29&amp;billing[process]=13&amp;billing[target_lang]={lang}"/>
+
+    <!-- News and Sponsor Logo/Link -->
+    <add key="URL.NewsFeed" value="https://www.lotro.com/{lang}/launcher-feed.xml" />
+    <add key="Launcher.NewsFeedCSSUrl" value="http://live.lotro.com/sites/launcher/ddo/newsfeed.css"/>
+    <add key="URL.NewsStyleSheet" value="http://live.lotro.com/sites/launcher/lotro/newsstylesheet.xslt"/>
+    <add key="URL.AlertsStyleSheet" value="http://live.lotro.com/sites/launcher/lotro/alertsstylesheet.xslt"/>
+    <add key="URL.NewsFeed.Timeout" value="10" />
+
+    <!-- Login Queue -->
+    <add key="WorldQueue.LoginQueue.URL" value="https://gls.lotro.com/GLS.AuthServer/LoginQueue.aspx"/>
+    <add key="WorldQueue.TakeANumber.Parameters" value="command=TakeANumber&amp;subscription={0}&amp;ticket={1}&amp;ticket_type=GLS&amp;queue_url={2}"/>    
+    <add key="WorldQueue.LeaveQueue.Parameters" value="command=LeaveQueue&amp;subscription={0}&amp;context={1}&amp;ticket_type=GLS&amp;queue_url={2}"/> 
+    <add key="WorldQueue.Threshold.WaitTimeMultiplier" value="1.00" />
+    <add key="WorldQueue.Threshold.Medium" value="300" />
+    <add key="WorldQueue.Threshold.Long" value="900" />
+    <add key="WorldQueue.PollTimer" value ="120" />
+
+
+    <!-- Prereqisite XML VC8 client install -->
+    <add key="URL.ReqSoftwareInstall" value="http://akamai.lotro.com/lotro/PreReqProd/PreInstallListProd.xml"/>
+
+    <!-- Promotional banner left launcher window -->
+    <add key="URL.BannerSource" value="http://live.lotro.com/sites/lotro/{lang}/lotrolauncherad.png?x=0&amp;y=36"/> 
+    <add key="URL.BannerTarget" value="http://live.lotro.com/sites/launcher/lotro/redirects/BannerTarget.php?lang={lang}" />
+    <add key="URL.BannerSource.Steam" value="http://live.lotro.com/sites/lotro/steam/{lang}/lotrolauncherad.png?x=0&amp;y=36" />
+    <!-- Miscellaneous -->
+    <add key="EmailAddress.Errors" value="LauncherErrors@turbine.com"/>
+    <add key="Eula.en.FilePath" value="en\LOTRO_EULA.rtf"/>
+    <add key="Legal.en.Titles" value="End User License Agreement|Terms of Service"/>
+    <add key="Legal.de.Titles" value="Endnutzer-Lizenzvereinbarung|Nutzungsbedingungen"/>
+    <add key="Legal.fr.Titles" value="Contrat de License Utilisateur Final|Conditions de Service"/>
+    <add key="Legal.English.Titles" value="End User License Agreement|Terms of Service"/>
+    <add key="Legal.en-GB.Titles" value="End User License Agreement|Terms of Service"/>
+
+    <add key="Legal.en.FilePaths" value="en\LOTRO_Eula.rtf|en\LOTRO_TOS.rtf"/>
+    <add key="Legal.DE.FilePaths" value="DE\LOTRO_Eula.rtf|DE\LOTRO_TOS.rtf"/>
+    <add key="Legal.FR.FilePaths" value="FR\LOTRO_Eula.rtf|FR\LOTRO_TOS.rtf"/>
+    <add key="Legal.English.FilePaths" value="en\LOTRO_Eula.rtf|en\LOTRO_TOS.rtf"/>
+    <add key="Legal.en-GB.FilePaths" value="en\LOTRO_Eula.rtf|en\LOTRO_TOS.rtf"/>    
+    <add key="URL.DownloadFilesList" value="http://akamai.lotro.com/lotro/patch/splashscreen/DownloadFilesList.xml"/>
+    
+    <!-- CHARACTER TRANSFER -->
+    <add key="ShardTransfer.Enabled" value="true"/>
+    <add key="ShardTransfer.GuideURL" value="https://www.lotro.com/en/worldtransfer"/>
+    <add key="ShardTransfer.ServiceURL" value="http://xfer.lotro.com/TurbineTransferService/TurbineTransferService.svc"/>
+    <add key="ShardTransfer.StoreURL" value="http://help.standingstonegames.com/hc/en-us/articles/115001511087-LOTRO-World-Character-Transfer-Guide"/>	
+
+    <!-- Other URLs -->
+    <add key="URL.Community" value="https://forums.lotro.com/index.php"/>
+    <add key="URL.Support" value="https://help.standingstonegames.com"/>
+    <add key="URL.PrivacyPolicy" value="http://www.turbine.com/?page_id=59"/>
+	<add key="URL.LegendaryServerInfo" value="https://lotro.com/{lang}/legendary"/>
+    
+    <!-- LOTRO logos are non-clickable -->
+
+    <!-- Akamai Download Information -->
+    <add key="URL.AkamaiDownloadURL" value="http://installer.lotro.com/lotro/"/>
+    <add key="Game.Version" value="4908.0071.2667.4040"/>
+
+
+  </appSettings>
+</configuration>
