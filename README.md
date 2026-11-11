@@ -21,8 +21,14 @@ It never goes into a file.
 
 ## Getting started
 
-1. Download `Mithlond-<version>-x86_64.AppImage`, make it executable (`chmod +x Mithlond-*.AppImage`) and run it.
-   Everything it needs is bundled. You only need **Wine** or **umu-run** on your system.
+1. Download `Mithlond-<version>-x86_64.AppImage` and **make it executable**. Browsers always save downloads
+   without that permission. If you skip this, double-clicking opens it in an archive program ("archive type not
+   supported") instead of running it. Either:
+   - in a terminal: `chmod +x ~/Downloads/Mithlond-*.AppImage`, or
+   - in your file manager: right-click the file → **Properties** → **Permissions** → tick
+     **"Allow executing file as program"** (or "Executable").
+
+   Then double-click it. Everything it needs is bundled. You only need **Wine** or **umu-run** on your system.
 2. **Settings → LOTRO game folder:** pick the folder with `lotroclient.exe` (Detect tries the usual places).
 3. **Settings → Runners and Prefix:** choose system Wine or a Proton build, and the prefix (the Wine "bottle")
    the game runs in. The defaults are `~/.wine` for Wine and umu's own prefix for Proton.

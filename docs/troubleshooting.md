@@ -3,6 +3,11 @@
 The **Log** panel at the bottom of the window shows everything the game, Wine/Proton and Companion print. The
 same log is saved in `~/.cache/mithlond/mithlond.log`.
 
+### Double-clicking the AppImage says "archive type not supported" (or opens an archive tool)
+The file isn't marked executable. Browsers remove that permission from every download. Run
+`chmod +x Mithlond-*.AppImage`, or right-click → Properties → Permissions → "Allow executing file as program".
+Re-downloading the file removes the permission again.
+
 ### "Username or password is incorrect"
 That's the login server's answer. Check the account name: it's your LOTRO account name, not an email address
 or character name.
