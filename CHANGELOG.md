@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.5
 
 - **New Game settings tab:** the game's own options, about 130 of them, in categories (Display, Detail, Lighting &
   Effects, Shadows, Sound, Interface, Controls & Camera, Voice Chat, Performance), with readable names, sliders

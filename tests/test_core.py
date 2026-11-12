@@ -1018,7 +1018,9 @@ class GamePrefsTests(unittest.TestCase):
                 tab._check_game()
                 self.assertFalse(tab.save_btn.isEnabled())
                 self.assertFalse(tab.restore_btn.isEnabled())
-            del app
+            tab._timer.stop()
+            tab.deleteLater()  # destroy the widgets now, not during interpreter shutdown (segfault)
+            app.processEvents()
 
 
 class SettingsTests(unittest.TestCase):
