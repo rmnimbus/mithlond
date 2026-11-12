@@ -20,6 +20,7 @@ mithlond/
   news.py         lotro.com launcher feed, HTML sanitizer, weekly coupon extraction
   companion.py    LotRO Companion: version, SourceForge releases, update/install, direct launch
   tools.py        Maestro / BruTE / WAN Songbook Filler: latest release info, download
+  gameprefs.py    the game's UserPreferences.ini: schema of every known setting (names and values from the client), read, save
   selfupdate.py   Mithlond's own updates from GitHub releases (rmnimbus/mithlond): check, download, verify, replace
   keystore.py     password storage through secret-tool
   hostenv.py      environment isolation when running from the AppImage

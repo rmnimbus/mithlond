@@ -81,6 +81,28 @@ If another program is already running in the same Proton prefix, Mithlond asks b
 normally waits until those programs close, so the game wouldn't appear. You can close them, start alongside
 them, or cancel.
 
+## Game settings
+
+The game's own options, read from `UserPreferences.ini` in the documents folder the game is started with. They're
+grouped into Display, Detail, Lighting & Effects, Shadows, Sound, Interface, Controls & Camera, Voice Chat and
+Performance. Settings the game writes that Mithlond doesn't know yet appear under **Other**, so nothing is left
+out. Hidden on purpose: your account's world history, the official launcher's own entries, voice device IDs, and
+values the game measures itself.
+
+- Values are shown with readable names (e.g. "Very High"), but saved exactly as the game writes them. The setting
+  names and allowed values come from the game client itself. Hover over a setting to see its name in the file.
+- Changed settings are shown in **bold** until you **Save changes**. Only those lines are written; everything
+  else in the file stays as it is. **Discard changes** reloads the file.
+- Every save keeps the previous file as `UserPreferences.ini.mithlond-<date>` (the last five).
+  **Restore previous** puts the newest one back.
+- **The game must be closed.** It rewrites the file when it exits, so changes made while it runs would be lost;
+  the tab only allows saving while no game client is running. Changes apply the next time the game starts.
+- **Performance → Maximum frame rate** is the game's own frame rate cap. The Play tab's *Frame rate* box is a
+  separate cap applied by DXVK.
+
+Tested: settings saved here (texture detail, the game's frame rate cap, interface scale, master volume, ambient
+occlusion) were read by the game and kept when it rewrote the file.
+
 ## Downloads
 
 Three sub-tabs list **Plugins**, **Skins** and **Music packs** from lotrointerface.com.

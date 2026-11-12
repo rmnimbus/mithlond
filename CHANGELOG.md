@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **New Game settings tab:** the game's own options, about 130 of them, in categories (Display, Detail, Lighting &
+  Effects, Shadows, Sound, Interface, Controls & Camera, Voice Chat, Performance), with readable names, sliders
+  for volumes and lists for quality levels. Saving writes only what changed, keeps a backup, and is only possible
+  while the game is closed (it rewrites the file on exit). Unknown settings show up under "Other".
+
 ## 1.4.4
 
 - **Play tab options:** a **frame rate limit** (DXVK), **Voice chat off**, and **Safe mode** for one start.

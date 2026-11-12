@@ -16,6 +16,7 @@ from PySide6.QtCore import QObject, QTimer, Signal
 from .config import (
     LOTRO_STEAM_APPID, Settings, prefix_problem, proton_problem, umu_command, wine_prefix_problem,
 )
+from .gameprefs import set_preference
 from .hostenv import host_env
 
 
@@ -80,33 +81,6 @@ def seed_preferences(s: Settings, docs: Path) -> str | None:
 
 
 SKIPPED = ".mithlond-skipped"
-
-
-def set_preference(path: Path, section: str, key: str, value: str) -> bool:
-    """Set `key=value` in `[section]` of a UserPreferences.ini, keeping every other line and the file's line
-    endings. Returns True if the file changed."""
-    raw = path.read_bytes().decode("utf-8", errors="surrogateescape")
-    nl = "\r\n" if "\r\n" in raw else "\n"
-    lines = raw.split(nl)
-    header = f"[{section}]".lower()
-    start = next((i for i, l in enumerate(lines) if l.strip().lower() == header), None)
-    if start is None:
-        while lines and lines[-1] == "":
-            lines.pop()
-        lines += [f"[{section}]", f"{key}={value}", ""]
-    else:
-        end = next((i for i in range(start + 1, len(lines)) if lines[i].lstrip().startswith("[")), len(lines))
-        for i in range(start + 1, end):
-            if lines[i].split("=", 1)[0].strip().lower() == key.lower():
-                if lines[i] == f"{key}={value}":
-                    return False
-                lines[i] = f"{key}={value}"
-                break
-        else:
-            last = max((i for i in range(start, end) if lines[i].strip()), default=start)
-            lines.insert(last + 1, f"{key}={value}")
-    path.write_bytes(nl.join(lines).encode("utf-8", errors="surrogateescape"))
-    return True
 
 
 def apply_intro_skip(s: Settings) -> list[str]:

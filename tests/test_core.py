@@ -953,6 +953,74 @@ class ToolTests(unittest.TestCase):
             self.assertEqual(companion.installed_version(base), "24.11.0.50")
 
 
+SAMPLE_PREFS = (
+    "[Launcher]\r\nGameClientType=1\r\n\r\n[User_1]\r\nUserName=someone\r\nWorldName_1=Glamdring\r\n\r\n"
+    "[Display]\r\nResolution=1920x1080\r\nScreenMode=FullScreen\r\nSyncToRefresh=False\r\n"
+    "WindowedResolution=122029088\r\n\r\n[Render]\r\nTextureDetail=VeryHigh\r\nBrightness=1.00\r\n"
+    "ShadowMapQuality=3\r\nMeasuredFillRate=77121.31\r\n\r\n[Sound]\r\nMasterVolume=0.10\r\n"
+    "\r\n[Voice]\r\nDeviceCapture=ABC\r\n\r\n[NewSection]\r\nSomethingNew=True\r\nOddValue=x y\r\n")
+
+
+class GamePrefsTests(unittest.TestCase):
+    def test_read_visible_save(self):
+        from mithlond import gameprefs as g
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "UserPreferences.ini"
+            f.write_bytes(SAMPLE_PREFS.encode())
+            values = g.read(f)
+            self.assertEqual(values["Display.Resolution"], "1920x1080")
+            shown = {p.id: p for p in g.visible(values)}
+            for hid in ("Launcher.GameClientType", "User_1.UserName", "User_1.WorldName_1", "Voice.DeviceCapture",
+                        "Render.MeasuredFillRate", "Display.WindowedResolution"):
+                self.assertNotIn(hid, shown)
+            self.assertEqual(shown["Render.TextureDetail"].category, "Detail")
+            self.assertEqual(shown["Sound.MasterVolume"].kind, "volume")
+            self.assertEqual((shown["NewSection.SomethingNew"].category, shown["NewSection.SomethingNew"].kind),
+                             ("Other", "bool"))  # unknown settings still show up
+            self.assertEqual(shown["NewSection.OddValue"].kind, "text")
+            self.assertEqual(g.format_value(shown["Sound.MasterVolume"], 0.5), "0.50")
+            self.assertEqual([g.pretty(v) for v in ("VeryHigh", "FullScreenWindowed", "16x9", "1920x1080", "D3D11")],
+                             ["Very High", "Full screen (borderless window)", "16:9", "1920x1080", "DirectX 11"])
+            self.assertIsNone(g.save(f, {}))
+            b = g.save(f, {"Display.ScreenMode": "Windowed", "Sound.MasterVolume": "0.50"})
+            self.assertEqual(b.read_bytes(), SAMPLE_PREFS.encode())  # backup = previous version
+            new = f.read_bytes().decode()
+            self.assertIn("ScreenMode=Windowed\r\n", new)
+            self.assertIn("MasterVolume=0.50\r\n", new)
+            self.assertIn("UserName=someone\r\n", new)  # untouched
+            self.assertEqual(new.count("\r\n"), SAMPLE_PREFS.count("\r\n"))
+            self.assertEqual(g.latest_backup(f), b)
+
+    def test_tab(self):
+        from PySide6.QtWidgets import QApplication
+        from mithlond import procs
+        from mithlond.ui.context import AppContext
+        from mithlond.ui.game_settings_tab import GameSettingsTab
+        app = QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(procs, "game_clients", lambda: []):
+            (Path(d) / "UserPreferences.ini").write_bytes(SAMPLE_PREFS.encode())
+            tab = GameSettingsTab(AppContext(Settings(documents_dir=d)))
+            titles = [tab.nav.item(i).text() for i in range(tab.nav.count())]
+            self.assertEqual(titles, ["Display (4)", "Detail (1)", "Shadows (1)", "Sound (1)", "Other (2)"])
+            self.assertEqual(tab.pages.count(), 5)
+            field = next(f for f in tab.fields if f.pref.id == "Display.ScreenMode")
+            self.assertFalse(tab.save_btn.isEnabled())
+            self.assertEqual(field.widget.currentText(), "Full screen")  # shown readable
+            field.widget.setCurrentIndex(field.widget.findData("Windowed"))
+            self.assertTrue(field.label.font().bold())
+            self.assertTrue(tab.save_btn.isEnabled())
+            vol = next(f for f in tab.fields if f.pref.id == "Sound.MasterVolume")
+            self.assertEqual(vol.current(), "0.10")
+            tab.save()
+            self.assertIn("ScreenMode=Windowed", (Path(d) / "UserPreferences.ini").read_text())
+            self.assertTrue(tab.restore_btn.isEnabled())
+            with mock.patch.object(procs, "game_clients", lambda: ["game"]):
+                tab._check_game()
+                self.assertFalse(tab.save_btn.isEnabled())
+                self.assertFalse(tab.restore_btn.isEnabled())
+            del app
+
+
 class SettingsTests(unittest.TestCase):
     def test_documents_subdirs(self):
         s = Settings(documents_dir="/docs")
