@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.10
+
+- **Settings, Visual effects and In game settings show one category at a time:** clicking a category in the list
+  shows only that category instead of one long page. Search still narrows the list to the categories with a match,
+  and the selected category shows only its matching settings; if it has none, the first category that does is
+  selected.
+
 ## 1.4.9
 
 - **New Visual effects tab**, with a category list and search like the other settings tabs:

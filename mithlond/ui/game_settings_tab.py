@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from .. import gameprefs, procs
 from ..config import DOCS_FOLDER_NAME, Settings
 from .context import AppContext
+from .widgets import select_first_visible
 
 
 def prefs_file(s: Settings) -> Path | None:
@@ -141,7 +142,8 @@ class GameSettingsTab(QWidget):
         self.no_match.setVisible(False)
         self.nav = QListWidget()
         self.nav.setMaximumWidth(220)
-        self.nav.itemClicked.connect(self._jump)
+        self.nav.currentRowChanged.connect(lambda _r: self._show_current())
+        self._counts: dict[str, int] = {}
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.groups: dict[str, tuple[QGroupBox, QFormLayout, list[Field]]] = {}
@@ -173,7 +175,10 @@ class GameSettingsTab(QWidget):
     # ---- loading -------------------------------------------------------------------------
     def load(self) -> None:
         self.path = prefs_file(self.ctx.settings)
+        keep = self.nav.currentItem().data(Qt.UserRole) if self.nav.currentItem() else None
+        self.nav.blockSignals(True)
         self.nav.clear()
+        self.nav.blockSignals(False)
         self.groups = {}
         old = self.scroll.takeWidget()
         if old is not None:
@@ -210,6 +215,9 @@ class GameSettingsTab(QWidget):
             self.nav.addItem(cat)
         col.addStretch()
         self.scroll.setWidget(page)
+        for i in range(self.nav.count()):  # stay on the category that was open before a reload
+            if self.nav.item(i).text() == keep:
+                self.nav.setCurrentRow(i)
         self._filter()
         self._check_game()
         self._timer.start()
@@ -234,16 +242,21 @@ class GameSettingsTab(QWidget):
                 hit = all(w in self._haystack(f) for w in words)
                 form.setRowVisible(row, hit)
                 shown += hit
-            box.setVisible(shown > 0)
+            self._counts[cat] = shown
             item.setHidden(shown == 0)
             item.setText(f"{cat} ({shown})")
             total += shown
         self.no_match.setVisible(bool(words) and total == 0)
-        self.scroll.verticalScrollBar().setValue(0)
+        select_first_visible(self.nav)
+        self._show_current()
 
-    def _jump(self, item) -> None:
-        box = self.groups[item.data(Qt.UserRole)][0]
-        self.scroll.verticalScrollBar().setValue(box.y())
+    def _show_current(self) -> None:
+        """Only the selected category's box is shown (with its search matches)."""
+        item = self.nav.currentItem()
+        cur = item.data(Qt.UserRole) if item else None
+        for cat, (box, _form, _fields) in self.groups.items():
+            box.setVisible(cat == cur and self._counts.get(cat, 0) > 0)
+        self.scroll.verticalScrollBar().setValue(0)
 
     def showEvent(self, e):
         super().showEvent(e)

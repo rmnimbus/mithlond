@@ -102,8 +102,9 @@ def subtle(text: str) -> QLabel:
 
 
 class SectionedPage(QWidget):
-    """Category list on the left, one scrolling page of boxes on the right, and a live search box: typing hides
-    every form row that doesn't contain all the typed words (label, texts, tooltips) and boxes left empty."""
+    """Category list on the left; the selected category's box on the right; a live search box. Typing hides every
+    form row that doesn't contain all the typed words (label, texts, tooltips) and categories left without a match;
+    the selected category then shows only its matching rows."""
 
     def __init__(self, placeholder: str = "Search…", parent=None):
         from PySide6.QtWidgets import QListWidget, QScrollArea
@@ -116,7 +117,8 @@ class SectionedPage(QWidget):
         self.no_match.setVisible(False)
         self.nav = QListWidget()
         self.nav.setMaximumWidth(200)
-        self.nav.itemClicked.connect(self._jump)
+        self.nav.currentRowChanged.connect(lambda _r: self._show_current())
+        self._counts: list[int] = []
         self.page = QWidget()
         self.col = QVBoxLayout(self.page)
         self.col.addStretch()
@@ -137,6 +139,7 @@ class SectionedPage(QWidget):
         self.col.insertWidget(self.col.count() - 1, box)  # before the stretch
         self.sections.append((title, box))
         self.nav.addItem(title)
+        self.filter()
 
     @staticmethod
     def _own_texts(w) -> list[str]:
@@ -177,6 +180,7 @@ class SectionedPage(QWidget):
         from PySide6.QtWidgets import QFormLayout
         words = self.search.text().lower().split()
         any_shown = False
+        counts: list[int] = []
         for i, (title, box) in enumerate(self.sections):
             form = box.layout()
             shown = 0
@@ -192,15 +196,36 @@ class SectionedPage(QWidget):
                     shown += hit
             else:
                 shown = int(all(w in (title + " " + " ".join(self._texts(box))).lower() for w in words))
-            box.setVisible(shown > 0)
+            counts.append(shown)
             self.nav.item(i).setHidden(shown == 0)
             any_shown |= shown > 0
+        self._counts = counts
         self.no_match.setVisible(bool(words) and not any_shown)
+        select_first_visible(self.nav)
+        self._show_current()
+
+    def select(self, title: str) -> None:
+        """Show the category with this title."""
+        for i, (t, _box) in enumerate(self.sections):
+            if t == title and not self.nav.item(i).isHidden():
+                self.nav.setCurrentRow(i)
+
+    def _show_current(self) -> None:
+        cur = self.nav.currentRow()
+        for i, (_title, box) in enumerate(self.sections):
+            box.setVisible(i == cur and i < len(self._counts) and self._counts[i] > 0)
         self.scroll.verticalScrollBar().setValue(0)
 
-    def _jump(self, item) -> None:
-        box = self.sections[self.nav.row(item)][1]
-        self.scroll.verticalScrollBar().setValue(box.y())
+
+def select_first_visible(nav) -> None:
+    """Keep the selected category if it's still listed; otherwise select the first one that is."""
+    cur = nav.currentRow()
+    if 0 <= cur < nav.count() and not nav.item(cur).isHidden():
+        return
+    for i in range(nav.count()):
+        if not nav.item(i).isHidden():
+            nav.setCurrentRow(i)
+            return
 
 
 class Collapsible(QWidget):

@@ -1003,11 +1003,22 @@ class GamePrefsTests(unittest.TestCase):
             titles = [tab.nav.item(i).text() for i in range(tab.nav.count())]
             self.assertEqual(titles, ["Display (4)", "Detail (1)", "Shadows (1)", "Sound (1)", "Other (2)"])
             self.assertEqual(len(tab.groups), 5)
+            shown_boxes = lambda: [c for c, (box, _f, _x) in tab.groups.items() if not box.isHidden()]
+            self.assertEqual(shown_boxes(), ["Display"])  # only the selected category
+            tab.nav.setCurrentRow(3)
+            self.assertEqual(shown_boxes(), ["Sound"])
             # live search: every typed word must match the name, file key, category or description
             visible = lambda: [tab.nav.item(i).text() for i in range(tab.nav.count()) if not tab.nav.item(i).isHidden()]
             tab.search.setText("volume")
             self.assertEqual(visible(), ["Sound (1)"])
-            self.assertTrue(tab.groups["Display"][0].isHidden())
+            self.assertEqual(shown_boxes(), ["Sound"])
+            tab.search.setText("screen mode")  # the selected category has no match: the first that does is shown
+            self.assertEqual(shown_boxes(), ["Display"])
+            tab.search.setText("")
+            tab.nav.setCurrentRow(0)
+            tab.search.setText("e")  # several categories match: the selection stays, filtered
+            self.assertEqual(shown_boxes(), ["Display"])
+            tab.search.setText("volume")
             tab.search.setText("screen mode")
             self.assertEqual(visible(), ["Display (1)"])
             tab.search.setText("MasterVolume")  # the name in the file works too
@@ -1138,8 +1149,13 @@ class LayoutTests(unittest.TestCase):
             page = st.page
             visible = lambda: [page.nav.item(i).text() for i in range(page.nav.count()) if not page.nav.item(i).isHidden()]
             self.assertEqual(visible(), ["Locations", "Runner & Prefix", "Game options", "Game", "About & updates"])
+            boxes = lambda: [t for t, b in page.sections if not b.isHidden()]
+            self.assertEqual(boxes(), ["Locations"])  # only the selected category
+            page.select("Game")
+            self.assertEqual(boxes(), ["Game"])
             page.search.setText("gamescope")
             self.assertEqual(visible(), ["Game options"])
+            self.assertEqual(boxes(), ["Game options"])
             page.search.setText("language")
             self.assertEqual(visible(), ["Game"])
             page.search.setText("check for updates")

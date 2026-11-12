@@ -118,7 +118,8 @@ values the game measures itself.
 
 - **Search:** type in the box above the settings and the list narrows as you type, across all categories. Every
   word must match the setting's name, its name in the file (e.g. `MasterVolume`), its category or its description.
-  The category list on the left shows how many settings match and jumps to that category.
+  The category list on the left only lists categories with a match and shows how many; click one to see its
+  matches. Without a search, clicking a category shows just that category.
 - Values are shown with readable names (e.g. "Very High"), but saved exactly as the game writes them. The setting
   names and allowed values come from the game client itself. Hover over a setting to see its name in the file.
 - Changed settings are shown in **bold** until you **Save changes**. Only those lines are written; everything
