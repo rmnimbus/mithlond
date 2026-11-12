@@ -1037,6 +1037,40 @@ class GamePrefsTests(unittest.TestCase):
             app.processEvents()
 
 
+class LayoutTests(unittest.TestCase):
+    def test_settings_sections_and_music_tools(self):
+        from PySide6.QtWidgets import QApplication
+        from mithlond.ui.context import AppContext
+        from mithlond.ui.settings_tab import SettingsTab
+        from mithlond.ui.songs_tab import SongsTab
+        app = QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as d:
+            ctx = AppContext(Settings(documents_dir=d))
+            st = SettingsTab(ctx)
+            page = st.page
+            visible = lambda: [page.nav.item(i).text() for i in range(page.nav.count()) if not page.nav.item(i).isHidden()]
+            self.assertEqual(visible(), ["Locations", "Runner & Prefix", "Game options", "Game", "About & updates"])
+            page.search.setText("gamescope")
+            self.assertEqual(visible(), ["Game options"])
+            page.search.setText("language")
+            self.assertEqual(visible(), ["Game"])
+            page.search.setText("check for updates")
+            self.assertEqual(visible(), ["About & updates"])
+            page.search.setText("zzzz")
+            self.assertEqual(visible(), [])
+            self.assertFalse(page.no_match.isHidden())
+            page.search.clear()
+            self.assertEqual(len(visible()), 5)
+            mt = SongsTab(ctx)
+            self.assertFalse(mt.tools_section.toggle.isChecked())  # collapsed by default
+            self.assertTrue(mt.tools_section.content.isHidden())
+            mt.tools_section.toggle.click()
+            self.assertFalse(mt.tools_section.content.isHidden())
+            for w in (st, mt):
+                w.deleteLater()
+            app.processEvents()
+
+
 class DesktopEntryTests(unittest.TestCase):
     def test_entry_follows_the_appimage(self):
         from mithlond import desktopentry as de

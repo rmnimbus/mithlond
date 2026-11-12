@@ -9,12 +9,12 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFileDialog, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QPlainTextEdit,
-    QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QPushButton, QVBoxLayout, QWidget,
 )
 
 from .. import config, runner
 from .context import AppContext
-from .widgets import PathPicker, subtle
+from .widgets import PathPicker, SectionedPage, subtle
 
 
 def check_docs(p: Path) -> tuple[bool, str]:
@@ -113,15 +113,19 @@ class SettingsTab(QWidget):
         self.gamescope_args = QLineEdit()
         self.gamescope_args.setPlaceholderText("gamescope arguments, e.g. -f -W 2560 -H 1440")
         self.gamescope_args.setToolTip("Arguments passed to gamescope before '--'")
-        run.addRow("Game options", grid)
+        opt = QFormLayout()
+        opt.addRow("", subtle("Apply to the game client only. Each needs the program installed on your system."))
+        opt.addRow("Options", grid)
         self.opt_warning = QLabel()
         self.opt_warning.setObjectName("bad")
         self.opt_warning.setWordWrap(True)
         self.opt_warning.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        run.addRow("", self.opt_warning)
-        run.addRow("gamescope arguments", self.gamescope_args)
-        run_box = QGroupBox("Runners and Prefix")
+        opt.addRow("", self.opt_warning)
+        opt.addRow("gamescope arguments", self.gamescope_args)
+        run_box = QGroupBox("Runner && Prefix")  # && = a literal & in Qt titles
         run_box.setLayout(run)
+        opt_box = QGroupBox("Game options")
+        opt_box.setLayout(opt)
 
         # --- game
         self.client = QComboBox()
@@ -171,17 +175,13 @@ class SettingsTab(QWidget):
         about_box = QGroupBox("About && updates")  # && = a literal & in Qt titles
         about_box.setLayout(ab)
 
-        inner = QWidget()
-        lay = QVBoxLayout(inner)
-        for b in (loc_box, run_box, game_box, about_box):
-            lay.addWidget(b)
-        lay.addStretch()
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(inner)
+        # categories on the left, one scrolling page, live search (like the Game settings tab)
+        self.page = SectionedPage("Search settings, e.g. prefix, gamescope, language, update…")
+        for title, box in (("Locations", loc_box), ("Runner & Prefix", run_box), ("Game options", opt_box),
+                           ("Game", game_box), ("About & updates", about_box)):
+            self.page.add(title, box)
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.addWidget(scroll)
+        outer.addWidget(self.page)
 
         self.load_values()
 

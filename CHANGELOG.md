@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.8
+
+- **Settings is categorized** like Game settings: a category list on the left (Locations, Runner & Prefix, Game
+  options, Game, About & updates), one scrolling page, and a search box that narrows it as you type. The old
+  "Runners and Prefix" box is split into **Runner & Prefix** and **Game options**.
+- **Music tools** on the Music tab is a collapsible section, closed by default.
+
 ## 1.4.7
 
 - **Add to application menu** (Settings → About & updates): puts Mithlond in your desktop's app launcher with

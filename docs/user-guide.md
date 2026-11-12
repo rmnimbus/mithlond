@@ -2,8 +2,9 @@
 
 ## First start
 
-Mithlond looks for a LOTRO install and documents folder. If it finds nothing, it opens on **Settings**. Fill in
-**Locations** from top to bottom:
+Mithlond looks for a LOTRO install and documents folder. If it finds nothing, it opens on **Settings**. The
+Settings tab has a category list on the left (Locations, Runner & Prefix, Game options, Game, About & updates) and
+a search box: typing narrows the page to the settings that match. Fill in **Locations** from top to bottom:
 
 | Setting | What to put there |
 |---|---|
@@ -11,7 +12,7 @@ Mithlond looks for a LOTRO install and documents folder. If it finds nothing, it
 | Game documents folder | Where the game keeps its settings, `Plugins`, `Music`, `PluginData` and `ui/skins`. **Choose…** lists every LOTRO documents folder on the computer (your home Documents and each Wine/Proton prefix) with when it was last played and how many plugins and songs it has, and can also make a new one. With **Start the game with this folder** ticked (the default), Mithlond starts the game with `--prefs <folder>\UserPreferences.ini`, so the game uses this folder whatever the prefix. If the folder has no game settings yet, Mithlond copies them from the prefix (or writes DirectX 11 defaults), so the game doesn't stop at its first-run graphics prompt. |
 | Downloads folder | Usually empty, meaning `<documents>/Downloads`. LotRO Companion, Maestro and WAN Songbook Filler get downloaded here. |
 
-### Runners and Prefix
+### Runner & Prefix, Game options
 
 - **Runner:** any Proton build found on the computer (`~/.local/share/Steam/compatibilitytools.d`, Flatpak Steam,
   `/usr/share/steam/compatibilitytools.d`, Steam's own), "umu's default" (downloads UMU-Proton automatically),
@@ -143,6 +144,8 @@ Plugins installed by hand or with LOTRO Plugin Compendium are picked up automati
   plugin in game to see changes.
 
 ### Music tools
+
+At the bottom of the Music tab, closed by default: click its title to open it.
 
 | Tool | Notes |
 |---|---|

@@ -7,14 +7,14 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QGroupBox, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QMessageBox, QPushButton,
+    QCheckBox, QComboBox, QFileDialog, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QMessageBox, QPushButton,
     QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
 from .. import runner, songs, tools
 from ..config import Settings
 from .context import AppContext
-from .widgets import PathPicker, open_path, open_url, subtle
+from .widgets import Collapsible, PathPicker, open_path, open_url, subtle
 from .workers import run_task
 
 
@@ -86,8 +86,9 @@ class SongsTab(QWidget):
         self.songbook_auto.setToolTip("After imports, deletions, music pack installs and closing Maestro/BruTE/"
                                       "WAN Songbook Filler started from here")
         self.songbook_auto.setChecked(ctx.settings.songbook_auto)
-        tools_box = QGroupBox("Music tools")
-        tl = QVBoxLayout(tools_box)
+        tools_body = QWidget()
+        tl = QVBoxLayout(tools_body)
+        tl.setContentsMargins(12, 0, 0, 0)
         tl.addWidget(self.songbook_auto)
         self.tool_rows = {
             "maestro": ToolRow(ctx, "maestro", "maestro_path", "Turns MIDI files into ABC songs, and plays them back.",
@@ -100,7 +101,8 @@ class SongsTab(QWidget):
         }
         for row in self.tool_rows.values():
             tl.addWidget(row)
-        lay.addWidget(tools_box)
+        self.tools_section = Collapsible("Music tools (Maestro, BruTE, WAN Songbook Filler)", tools_body)
+        lay.addWidget(self.tools_section)
 
         self.import_files.clicked.connect(self._pick_files)
         self.import_dir.clicked.connect(self._pick_dir)

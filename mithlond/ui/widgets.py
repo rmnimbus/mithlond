@@ -99,3 +99,132 @@ def subtle(text: str) -> QLabel:
     lbl.setWordWrap(True)
     lbl.setProperty("subtle", True)
     return lbl
+
+
+class SectionedPage(QWidget):
+    """Category list on the left, one scrolling page of boxes on the right, and a live search box: typing hides
+    every form row that doesn't contain all the typed words (label, texts, tooltips) and boxes left empty."""
+
+    def __init__(self, placeholder: str = "Search…", parent=None):
+        from PySide6.QtWidgets import QListWidget, QScrollArea
+        super().__init__(parent)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText(placeholder)
+        self.search.setClearButtonEnabled(True)
+        self.search.textChanged.connect(self.filter)
+        self.no_match = QLabel("Nothing matches your search.")
+        self.no_match.setVisible(False)
+        self.nav = QListWidget()
+        self.nav.setMaximumWidth(200)
+        self.nav.itemClicked.connect(self._jump)
+        self.page = QWidget()
+        self.col = QVBoxLayout(self.page)
+        self.col.addStretch()
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setWidget(self.page)
+        self.sections: list[tuple[str, QWidget]] = []
+        right = QVBoxLayout()
+        right.addWidget(self.search)
+        right.addWidget(self.no_match)
+        right.addWidget(self.scroll, 1)
+        body = QHBoxLayout(self)
+        body.setContentsMargins(0, 0, 0, 0)
+        body.addWidget(self.nav)
+        body.addLayout(right, 1)
+
+    def add(self, title: str, box: QWidget) -> None:
+        self.col.insertWidget(self.col.count() - 1, box)  # before the stretch
+        self.sections.append((title, box))
+        self.nav.addItem(title)
+
+    @staticmethod
+    def _own_texts(w) -> list[str]:
+        from PySide6.QtWidgets import QComboBox
+        out = [w.toolTip()]
+        if isinstance(w, QComboBox):
+            out += [w.itemText(i) for i in range(w.count())]
+        else:
+            for attr in ("text", "placeholderText", "title"):
+                f = getattr(w, attr, None)
+                if callable(f):
+                    try:
+                        v = f()
+                    except TypeError:
+                        continue
+                    if isinstance(v, str):
+                        out.append(v)
+        return out
+
+    @classmethod
+    def _texts(cls, obj) -> list[str]:
+        """Words shown by a widget or layout and everything inside it (texts, placeholders, tooltips, list items)."""
+        from PySide6.QtWidgets import QLayout
+        if obj is None:
+            return []
+        if isinstance(obj, QLayout):
+            out = []
+            for i in range(obj.count()):
+                item = obj.itemAt(i)
+                out += cls._texts(item.widget() or item.layout())
+            return out
+        out = cls._own_texts(obj)
+        for child in obj.findChildren(QWidget):
+            out += cls._own_texts(child)
+        return out
+
+    def filter(self, *_):
+        from PySide6.QtWidgets import QFormLayout
+        words = self.search.text().lower().split()
+        any_shown = False
+        for i, (title, box) in enumerate(self.sections):
+            form = box.layout()
+            shown = 0
+            if isinstance(form, QFormLayout):
+                for row in range(form.rowCount()):
+                    label = form.itemAt(row, QFormLayout.LabelRole)
+                    field = form.itemAt(row, QFormLayout.FieldRole)
+                    span = form.itemAt(row, QFormLayout.SpanningRole)
+                    hay = " ".join([title] + [t for it in (label, field, span) if it
+                                              for t in self._texts(it.widget() or it.layout())]).lower()
+                    hit = all(w in hay for w in words)
+                    form.setRowVisible(row, hit)
+                    shown += hit
+            else:
+                shown = int(all(w in (title + " " + " ".join(self._texts(box))).lower() for w in words))
+            box.setVisible(shown > 0)
+            self.nav.item(i).setHidden(shown == 0)
+            any_shown |= shown > 0
+        self.no_match.setVisible(bool(words) and not any_shown)
+        self.scroll.verticalScrollBar().setValue(0)
+
+    def _jump(self, item) -> None:
+        box = self.sections[self.nav.row(item)][1]
+        self.scroll.verticalScrollBar().setValue(box.y())
+
+
+class Collapsible(QWidget):
+    """A titled section that opens and closes with a click on its header (closed by default)."""
+
+    def __init__(self, title: str, content: QWidget, expanded: bool = False, parent=None):
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import QToolButton
+        super().__init__(parent)
+        self.toggle = QToolButton()
+        self.toggle.setText(title)
+        self.toggle.setCheckable(True)
+        self.toggle.setChecked(expanded)
+        self.toggle.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.toggle.setStyleSheet("QToolButton { border: none; font-weight: bold; }")
+        self.content = content
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.addWidget(self.toggle)
+        lay.addWidget(content)
+        self.toggle.toggled.connect(self._set)
+        self._set(expanded)
+
+    def _set(self, open_: bool) -> None:
+        from PySide6.QtCore import Qt
+        self.toggle.setArrowType(Qt.DownArrow if open_ else Qt.RightArrow)
+        self.content.setVisible(open_)
