@@ -172,6 +172,8 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(args[args.index("-h") + 1], "10.0.0.1:9004")
         self.assertEqual(args[args.index("--glsticketdirect") + 1], "TICKET+/=")
         self.assertEqual(args[args.index("--chatserver") + 1], "9.9.9.9:2900")
+        self.assertEqual(args[args.index("--prefs") + 1].rsplit("\\", 1)[-1], "UserPreferences.ini")
+        self.assertTrue(args[args.index("--prefs") + 1].startswith("Z:"))
         self.assertTrue(any("LotRO Companion.exe" in line for line in lines))
         logtext = win.log.toPlainText()
         self.assertNotIn("TICKET+/=", logtext)

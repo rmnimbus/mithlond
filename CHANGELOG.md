@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.0
+
+- **The game always uses your chosen documents folder.** Mithlond starts the client with
+  `--prefs <documents>\UserPreferences.ini`, which makes the game use that folder for settings, plugins, music
+  and plugin data, whatever the Wine prefix. Tested: the game read and wrote its settings in the chosen folder
+  and left the prefix's own folder alone. Folders without game settings get them copied from the prefix (or
+  DirectX 11 defaults), because without them the game stops at a first-run graphics prompt.
+- **Choose…** next to the documents folder lists every LOTRO documents folder found on the computer, showing
+  where it belongs, when it was last played, its plugin and song counts and whether it's a link. It can also
+  create a new one.
+- Removed the separate *Plugins folder* setting. The game only loads plugins from its documents folder, so the
+  setting could only make Mithlond install plugins where the game never looks.
+- Proton builds for another CPU architecture (e.g. an aarch64 "Proton-GE Latest" on an x86-64 PC) are greyed
+  out in the runner list, and launching with one gives a clear error instead of "Exec format error".
+
 ## 1.2.1
 
 - **Fix: "corestrings.dll not found" with Proton-EM.** Proton-EM starts programs given as Linux paths through

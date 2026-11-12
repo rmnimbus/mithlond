@@ -8,8 +8,7 @@ Mithlond looks for a LOTRO install and documents folder. If it finds nothing, it
 | Setting | What to put there |
 |---|---|
 | LOTRO game folder | The folder that contains `lotroclient.exe` and `lotro.launcherconfig`. |
-| Documents folder | `…/Documents/The Lord of the Rings Online` *inside the prefix the game runs in*. Detect picks the one with the most recently used `UserPreferences.ini`. |
-| Plugins folder | Usually empty, meaning `<documents>/Plugins`. The game only loads plugins from there. |
+| Game documents folder | Where the game keeps its settings, `Plugins`, `Music`, `PluginData` and `ui/skins`. **Choose…** lists every LOTRO documents folder on the computer (your home Documents and each Wine/Proton prefix) with when it was last played and how many plugins and songs it has, and can also make a new one. With **Start the game with this folder** ticked (the default), Mithlond starts the game with `--prefs <folder>\UserPreferences.ini`, so the game uses this folder whatever the prefix. If the folder has no game settings yet, Mithlond copies them from the prefix (or writes DirectX 11 defaults), so the game doesn't stop at its first-run graphics prompt. |
 | Downloads folder | Usually empty, meaning `<documents>/Downloads`. LotRO Companion, Maestro and WAN Songbook Filler get downloaded here. |
 
 ### Runners and Prefix

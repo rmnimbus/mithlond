@@ -32,9 +32,9 @@ It never goes into a file.
 2. **Settings → LOTRO game folder:** pick the folder with `lotroclient.exe` (Detect tries the usual places).
 3. **Settings → Runners and Prefix:** choose system Wine or a Proton build, and the prefix (the Wine "bottle")
    the game runs in. The defaults are `~/.wine` for Wine and umu's own prefix for Proton.
-4. **Settings → Documents folder:** this is where the game keeps plugins, music and settings. It lives inside the
-   prefix (`<prefix>/drive_c/users/<user>/Documents/The Lord of the Rings Online`). Use **Detect** after the
-   game has run once.
+4. **Settings → Game documents folder:** this is where the game keeps plugins, music and settings. Use
+   **Choose…** to pick one of the folders found on your computer (or make a new one). Mithlond starts the game
+   with that folder, whatever Wine prefix it runs in.
 5. **Play:** enter your account, pick a world, press **PLAY**.
 
 More in the **[User guide](docs/user-guide.md)**. If something doesn't work, see

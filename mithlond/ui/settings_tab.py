@@ -56,21 +56,22 @@ class SettingsTab(QWidget):
         self.game = PathPicker(validator=config.check_game_dir, placeholder="Folder that contains lotroclient.exe")
         self.game_detect = QPushButton("Detect")
         self.docs = PathPicker(validator=check_docs, placeholder="…/Documents/The Lord of the Rings Online")
-        self.docs_detect = QPushButton("Detect")
-        self.plugins = PathPicker(validator=self._check_plugins, empty_ok=True,
-                                  placeholder="Empty = the Plugins folder inside the documents folder")
-        self.plugins_reset = QPushButton("Default")
-        self.plugins_reset.setToolTip("Use the Plugins folder inside the documents folder")
-        loc = QFormLayout()
-        loc.addRow("LOTRO game folder", self._with(self.game, self.game_detect))
-        loc.addRow("Documents folder", self._with(self.docs, self.docs_detect))
-        loc.addRow("", subtle("The documents folder holds Plugins, Music, PluginData and ui/skins. It depends on "
-                              "the Wine prefix the game runs in. Detect picks the one the game used most recently."))
-        loc.addRow("Plugins folder", self._with(self.plugins, self.plugins_reset))
+        self.docs_choose = QPushButton("Choose…")
+        self.docs_choose.setToolTip("Pick from the documents folders found on this computer, or make a new one")
+        self.use_prefs = QCheckBox("Start the game with this folder (whatever the prefix)")
+        self.use_prefs.setToolTip("Passes --prefs <folder>\\UserPreferences.ini to the game, which makes it use this\n"
+                                  "folder for its settings, plugins, music, plugin data and screenshots.")
         self.downloads = PathPicker(validator=self._check_downloads, empty_ok=True,
                                     placeholder="Empty = the Downloads folder inside the documents folder")
         self.downloads_reset = QPushButton("Default")
         self.downloads_reset.setToolTip("Use the Downloads folder inside the documents folder")
+        loc = QFormLayout()
+        loc.addRow("LOTRO game folder", self._with(self.game, self.game_detect))
+        loc.addRow("Game documents\nfolder", self._with(self.docs, self.docs_choose))
+        loc.addRow("", self.use_prefs)
+        loc.addRow("", subtle("Holds your game settings, Plugins, Music, PluginData and ui/skins. With the box ticked "
+                              "the game always uses this folder; without it, the game uses "
+                              "Documents/The Lord of the Rings Online inside whichever prefix it runs in."))
         loc.addRow("Downloads folder", self._with(self.downloads, self.downloads_reset))
         loc.addRow("", subtle("Where Mithlond puts extra programs it downloads for you: LotRO Companion, Maestro, "
                               "WAN Songbook Filler."))
@@ -159,9 +160,8 @@ class SettingsTab(QWidget):
 
         self.load_values()
 
-        self.plugins_reset.clicked.connect(lambda: self.plugins.set_text("", emit=True))
         self.downloads_reset.clicked.connect(lambda: self.downloads.set_text("", emit=True))
-        for picker in (self.game, self.docs, self.plugins, self.downloads, self.umu):
+        for picker in (self.game, self.docs, self.downloads, self.umu):
             picker.changed.connect(self.save)
         for w in (self.high_res,):
             w.toggled.connect(self.save)
@@ -176,7 +176,8 @@ class SettingsTab(QWidget):
         self.env.textChanged.connect(self._env_timer.start)
         self._env_timer.timeout.connect(self.save)
         self.game_detect.clicked.connect(self.detect_game)
-        self.docs_detect.clicked.connect(self.detect_docs)
+        self.docs_choose.clicked.connect(self.choose_docs)
+        self.use_prefs.toggled.connect(self.save)
 
     def _check_downloads(self, p: Path) -> tuple[bool, str]:
         if str(p) in ("", "."):
@@ -184,20 +185,6 @@ class SettingsTab(QWidget):
         if p.exists() and not p.is_dir():
             return False, "Not a folder"
         return True, "Exists" if p.is_dir() else "Will be created on the first download"
-
-    def _check_plugins(self, p: Path) -> tuple[bool, str]:
-        default = self.ctx.settings.default_plugins_path()
-        if str(p) in ("", "."):
-            return True, f"Using {default}" if default else "Set the documents folder first"
-        if not p.is_dir():
-            return False, "Folder does not exist (it will be created on the first install)"
-        n = len(list(p.glob("*/*.plugin"))) + len(list(p.glob("*.plugin")))
-        found = f"{n} plugin descriptor{'s' if n != 1 else ''} found. "
-        if default and p.resolve() == default.resolve():
-            return True, found + "This is the folder the game loads plugins from."
-        return True, found + ("Note: the game only loads plugins from "
-                              f"{default or '<documents folder>/Plugins'}, so plugins installed here only show "
-                              "up in game if that folder points here (e.g. a symlink) or you play from this prefix.")
 
     @staticmethod
     def _with(w: QWidget, btn: QPushButton) -> QWidget:
@@ -213,8 +200,8 @@ class SettingsTab(QWidget):
         s = self.ctx.settings
         self.game.set_text(s.game_dir)
         self.docs.set_text(s.documents_dir)
-        self.plugins.set_text(s.plugins_dir)
         self.downloads.set_text(s.downloads_dir)
+        self.use_prefs.setChecked(s.use_prefs)
         self._fill_runners()
         self._fill_prefixes()
         self.umu.set_text(s.umu_run)
@@ -247,7 +234,12 @@ class SettingsTab(QWidget):
         sys_wine = shutil.which("wine")
         self.runner.addItem(f"Wine (system{': ' + sys_wine if sys_wine else ', not installed'})", ("wine", "wine"))
         for p in config.proton_versions():
-            self.runner.addItem(f"Proton: {p.name}", ("umu", str(p)))
+            arch = config.proton_arch(p)
+            if arch and arch != config.host_arch():
+                self.runner.addItem(f"Proton: {p.name}  ({arch} build, can't run on this computer)", ("umu", str(p)))
+                self.runner.model().item(self.runner.count() - 1).setEnabled(False)
+            else:
+                self.runner.addItem(f"Proton: {p.name}", ("umu", str(p)))
         self.runner.addItem("Proton: umu's default (UMU-Proton, downloaded automatically)", ("umu", ""))
         current = (s.runner, s.wine_binary if s.runner == "wine" else s.proton_path)
         if s.runner == "wine" and s.wine_binary not in ("", "wine"):
@@ -309,6 +301,8 @@ class SettingsTab(QWidget):
         self.umu_label.setVisible(umu)
         prefix = s.prefix_path()
         problem = config.prefix_problem(prefix) if umu else config.wine_prefix_problem(prefix)
+        if umu and s.proton_path and not problem:
+            problem = config.proton_problem(Path(s.proton_path).expanduser())
         if problem:
             text, ok = f"✘ {problem}", False
         else:
@@ -329,9 +323,8 @@ class SettingsTab(QWidget):
         game_changed = s.game_dir != self.game.text()
         s.game_dir = self.game.text()
         s.documents_dir = self.docs.text()
-        s.plugins_dir = self.plugins.text()
         s.downloads_dir = self.downloads.text()
-        self.plugins.validate()  # these messages depend on the documents folder
+        s.use_prefs = self.use_prefs.isChecked()
         self.downloads.validate()
         s.wine_prefix = self.prefix.currentText().strip()
         s.umu_run = self.umu.text()
@@ -357,13 +350,8 @@ class SettingsTab(QWidget):
             return
         self.game.set_text(str(found[0]), emit=True)
 
-    def detect_docs(self) -> None:
-        found = config.detect_documents_dirs(self.ctx.settings)
-        if not found:
-            QMessageBox.information(self, "Detect", "No documents folder found. Start the game once, or Browse… to it.")
-            return
-        self.docs.set_text(str(found[0]), emit=True)
-        if len(found) > 1:
-            others = "\n".join(f"  • {p}" for p in found[1:])
-            QMessageBox.information(self, "Detect", f"Using the most recently used one:\n  {found[0]}\n\n"
-                                    f"Others found:\n{others}")
+    def choose_docs(self) -> None:
+        from .docs_chooser import DocsChooser
+        dlg = DocsChooser(self.ctx.settings, self)
+        if dlg.exec() and dlg.chosen:
+            self.docs.set_text(str(dlg.chosen), emit=True)

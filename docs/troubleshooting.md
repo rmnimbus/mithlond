@@ -57,10 +57,15 @@ fallback. LOTRO did with GE-Proton 11-6. The game runs normally either way.
 ### "corestrings.dll not found. tried to print stringid 201"
 Fixed in 1.2.1. Proton-EM ran the game from its `x64` folder instead of the game folder. Update Mithlond.
 
+### "…is an aarch64 build and can't run on this x86_64 computer"
+That Proton folder was built for ARM computers (for example an aarch64 "Proton-GE Latest"). Pick another Proton
+in Settings → Runners and Prefix; such builds are greyed out in the list.
+
 ### Switching Proton builds on an existing prefix
-Running a different Proton build in a prefix makes Proton convert the prefix to its own version. Going back
-can print "Prefix has an invalid version?!". It usually still works after one slower start, but it's best to
-stick to one Proton build per prefix. If you share a prefix with Faugus or Steam, use the same build there.
+Running a different Proton build in a prefix makes Proton convert the prefix to its own version, and switching
+back can print "Prefix has an invalid version?!". **The first launch after a switch can fail** (the game never
+appears) while Proton converts the prefix; the next launch works. It's best to stick to one Proton build per
+prefix. If you share a prefix with Faugus or Steam, use the same build there.
 
 ### The password isn't remembered
 This needs `secret-tool` and a running Secret Service keyring: KWallet (`ksecretd`), GNOME Keyring or

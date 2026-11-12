@@ -33,7 +33,7 @@ class Settings:
     # Locations
     game_dir: str = ""
     documents_dir: str = ""
-    plugins_dir: str = ""  # empty: <documents_dir>/Plugins
+    use_prefs: bool = True  # start the game with --prefs <documents_dir>\UserPreferences.ini
     downloads_dir: str = ""  # empty: <documents_dir>/Downloads (Maestro, WAN Songbook Filler, Companion…)
 
     # How Windows programs are run
@@ -113,10 +113,7 @@ class Settings:
         return Path(self.documents_dir).expanduser() if self.documents_dir else None
 
     def subdir(self, name: str) -> Path | None:
-        """A folder inside the documents folder (Plugins, Music, PluginData, ui/skins).
-        Plugins can be pointed elsewhere with `plugins_dir`."""
-        if name.lower() == "plugins" and self.plugins_dir:
-            return Path(self.plugins_dir).expanduser()
+        """A folder inside the documents folder (Plugins, Music, PluginData, ui/skins)."""
         docs = self.docs_path
         if docs is None:
             return None
@@ -130,10 +127,6 @@ class Settings:
 
     def companion_path(self) -> Path:
         return Path(self.companion_dir).expanduser() if self.companion_dir else self.downloads_path() / "LotRO Companion"
-
-    def default_plugins_path(self) -> Path | None:
-        docs = self.docs_path
-        return (find_case_insensitive(docs, "Plugins") or docs / "Plugins") if docs else None
 
     def prefix_path(self) -> Path:
         if self.wine_prefix:
@@ -288,6 +281,37 @@ def proton_versions() -> list[Path]:
             seen.add(p.resolve())
             uniq.append(p)
     return uniq
+
+
+_ELF_MACHINES = {0x3E: "x86_64", 0xB7: "aarch64", 0x03: "i386"}
+
+
+def host_arch() -> str:
+    import platform
+    m = platform.machine().lower()
+    return {"amd64": "x86_64", "arm64": "aarch64"}.get(m, m)
+
+
+def proton_arch(proton_dir: Path) -> str | None:
+    """CPU architecture a Proton build was made for, read from its wineserver binary's ELF header."""
+    for name in ("files/bin/wineserver", "files/bin/wine64", "files/bin/wine", "dist/bin/wineserver"):
+        f = proton_dir / name
+        try:
+            with open(f, "rb") as fh:
+                head = fh.read(20)
+        except OSError:
+            continue
+        if head[:4] == b"\x7fELF":
+            return _ELF_MACHINES.get(int.from_bytes(head[18:20], "little"))
+    return None
+
+
+def proton_problem(proton_dir: Path) -> str | None:
+    arch = proton_arch(proton_dir)
+    if arch and arch != host_arch():
+        article = "an" if arch[0] in "aeiou" else "a"
+        return f"{proton_dir.name} is {article} {arch} build and can't run on this {host_arch()} computer"
+    return None
 
 
 def detect_prefixes() -> list[Path]:

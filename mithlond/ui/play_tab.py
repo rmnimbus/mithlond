@@ -462,7 +462,7 @@ class PlayTab(QWidget):
         try:
             exe = gls.client_executable(game, cfg, s.client)
             args = gls.client_arguments(cfg, sub.name, ws.login_server, ticket, world.chat_server,
-                                        s.language, s.high_res)
+                                        s.language, s.high_res) + runner.prefs_args(s)
             argv, env = runner.windows_command(s, exe, args, join=self._join)
             argv, env = runner.apply_game_options(s, argv, env)
             if s.opt_gamemode and (gm := runner.gamemode_problem()):

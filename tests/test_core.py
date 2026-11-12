@@ -387,6 +387,54 @@ class RunnerTests(unittest.TestCase):
             _, env = runner.windows_command(s, "game.exe", [], join=True)
             self.assertEqual(env["PROTON_VERB"], "run")
 
+    def test_proton_arch(self):
+        from mithlond import config, runner
+        with tempfile.TemporaryDirectory() as d:
+            def fake(name, machine):
+                b = Path(d) / name / "files" / "bin"
+                b.mkdir(parents=True)
+                (b / "wineserver").write_bytes(b"\x7fELF" + bytes(14) + machine.to_bytes(2, "little") + bytes(40))
+                return Path(d) / name
+            arm, x86 = fake("Proton-GE Latest", 0xB7), fake("GE-Proton11-6", 0x3E)
+            self.assertEqual(config.proton_arch(arm), "aarch64")
+            self.assertEqual(config.proton_arch(x86), "x86_64")
+            self.assertIsNone(config.proton_arch(Path(d) / "missing"))
+            if config.host_arch() == "x86_64":
+                self.assertIn("is an aarch64 build", config.proton_problem(arm))
+                self.assertIsNone(config.proton_problem(x86))
+                umu = Path(d) / "umu-run"
+                umu.write_text("#!/bin/sh\n")
+                with self.assertRaises(runner.RunnerError):
+                    runner.windows_command(Settings(runner="umu", umu_run=str(umu), proton_path=str(arm),
+                                                    wine_prefix=str(Path(d) / "pfx")), "g.exe", [])
+
+    def test_prefs_args(self):
+        from mithlond import runner
+        with tempfile.TemporaryDirectory() as d:
+            docs = Path(d) / "My Docs" / "The Lord of the Rings Online"
+            s = Settings(documents_dir=str(docs))
+            self.assertEqual(runner.prefs_args(s), ["--prefs", runner.dos_path(docs / "UserPreferences.ini")])
+            self.assertTrue(docs.is_dir())  # created so the game can write there
+            self.assertTrue(runner.prefs_args(s)[1].startswith("Z:\\"))
+            self.assertIn("D3DVersionPromptedForAtStartup=11", (docs / "UserPreferences.ini").read_text())
+            # seeding copies from the prefix's own documents folder when there is one
+            pfx = Path(d) / "pfx"
+            src = pfx / "drive_c/users/steamuser/Documents/The Lord of the Rings Online"
+            src.mkdir(parents=True)
+            (src / "UserPreferences.ini").write_text("[Display]\nFullScreen=False\n")
+            (src / "lotro.keymap").write_text("keys")
+            docs2 = Path(d) / "new"
+            s2 = Settings(documents_dir=str(docs2), wine_prefix=str(pfx), wine_binary="/bin/sh")
+            runner.prefs_args(s2)
+            self.assertEqual((docs2 / "UserPreferences.ini").read_text(), "[Display]\nFullScreen=False\n")
+            self.assertEqual((docs2 / "lotro.keymap").read_text(), "keys")
+            (docs2 / "UserPreferences.ini").write_text("mine")
+            runner.prefs_args(s2)  # existing settings are never overwritten
+            self.assertEqual((docs2 / "UserPreferences.ini").read_text(), "mine")
+            s.use_prefs = False
+            self.assertEqual(runner.prefs_args(s), [])
+            self.assertEqual(runner.prefs_args(Settings()), [])
+
     def test_removed_onelauncher_mode_migrates(self):
         from mithlond import config
         s = Settings(runner="onelauncher")
@@ -747,14 +795,11 @@ class ToolTests(unittest.TestCase):
 
 
 class SettingsTests(unittest.TestCase):
-    def test_plugins_override(self):
+    def test_documents_subdirs(self):
         s = Settings(documents_dir="/docs")
         self.assertEqual(s.subdir("Plugins"), Path("/docs/Plugins"))
-        s.plugins_dir = "/elsewhere/Plugins"
-        self.assertEqual(s.subdir("Plugins"), Path("/elsewhere/Plugins"))
         self.assertEqual(s.subdir("Music"), Path("/docs/Music"))
-        self.assertEqual(s.default_plugins_path(), Path("/docs/Plugins"))
-
+        self.assertTrue(s.use_prefs)
     def test_roundtrip(self):
         s = Settings(game_dir="/g", extra_env={"A": "1"})
         s.accounts.append(__import__("mithlond.config", fromlist=["Account"]).Account("me", "Glamdring"))

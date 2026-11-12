@@ -13,7 +13,9 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
-from .config import LOTRO_STEAM_APPID, Settings, detect_umu_run, prefix_problem, wine_prefix_problem
+from .config import (
+    LOTRO_STEAM_APPID, Settings, detect_umu_run, prefix_problem, proton_problem, wine_prefix_problem,
+)
 from .hostenv import host_env
 
 
@@ -38,6 +40,45 @@ def proton_uses_start_unix(s: Settings) -> bool:
         return False
 
 
+def prefs_args(s: Settings) -> list[str]:
+    """`--prefs <documents>\\UserPreferences.ini`: the client then uses that folder as its documents folder
+    (settings, Plugins, Music, PluginData, screenshots) instead of the one inside the Wine prefix."""
+    docs = s.docs_path
+    if not s.use_prefs or not docs:
+        return []
+    try:
+        docs.mkdir(parents=True, exist_ok=True)
+        seed_preferences(s, docs)
+    except OSError as e:
+        raise RunnerError(f"Can't prepare the documents folder {docs}: {e}") from e
+    return ["--prefs", dos_path(docs / "UserPreferences.ini")]
+
+
+MINIMAL_PREFS = "[Render]\nD3DVersionPromptedForAtStartup=11\nGraphicsCore=D3D11\n"
+
+
+def seed_preferences(s: Settings, docs: Path) -> str | None:
+    """A folder without UserPreferences.ini makes the client stop at a 'which DirectX?' prompt. Copy the newest
+    settings (and key bindings) from the prefix's own documents folders, or write minimal DirectX 11 defaults
+    like OneLauncher does. Returns what was done, or None if the folder already had settings."""
+    prefs = docs / "UserPreferences.ini"
+    if prefs.exists():
+        return None
+    from .config import DOCS_FOLDER_NAME
+    users = s.prefix_path() / "drive_c" / "users"
+    found = sorted((p for p in users.glob(f"*/Documents/{DOCS_FOLDER_NAME}/UserPreferences.ini")
+                    if p.resolve() != prefs.resolve()), key=lambda p: p.stat().st_mtime, reverse=True) \
+        if users.is_dir() else []
+    if found:
+        shutil.copy2(found[0], prefs)
+        keymap = found[0].parent / "lotro.keymap"
+        if keymap.exists() and not (docs / "lotro.keymap").exists():
+            shutil.copy2(keymap, docs / "lotro.keymap")
+        return f"copied game settings from {found[0].parent}"
+    prefs.write_text(MINIMAL_PREFS)
+    return "wrote default game settings (DirectX 11)"
+
+
 def windows_command(s: Settings, exe: str | Path, args: list[str],
                     join: bool = False, dos: bool = True) -> tuple[list[str], dict[str, str]]:
     """argv and environment to run a Windows executable with the configured runner.
@@ -58,6 +99,8 @@ def windows_command(s: Settings, exe: str | Path, args: list[str],
         env.setdefault("GAMEID", f"umu-{LOTRO_STEAM_APPID}")
         env.setdefault("STORE", "none")
         if s.proton_path:
+            if problem := proton_problem(Path(s.proton_path).expanduser()):
+                raise RunnerError(f"{problem}. Pick another Proton in Settings → Runners and Prefix.")
             env["PROTONPATH"] = s.proton_path
         if join:
             env["PROTON_VERB"] = "run"
