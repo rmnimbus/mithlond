@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Play tab options:** a **frame rate limit** (DXVK), **Voice chat off**, and **Safe mode** for one start.
+  Safe mode makes the game reset its graphics settings for good, so Mithlond backs up `UserPreferences.ini` first.
 - **Skip the intro videos** (Settings → Game, on by default): the Turbine logo video no longer plays at every
   start, and the intro cinematic is marked as seen. Unticking puts the video back.
 - Warns when SELinux blocks Wine/Proton (`selinuxuser_execmod` off, e.g. openSUSE): the game would close

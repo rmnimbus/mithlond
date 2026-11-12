@@ -228,6 +228,23 @@ def gamemode_register(pid: int) -> bool:
     return r.returncode == 0
 
 
+def backup_preferences(s: Settings) -> Path | None:
+    """Copy UserPreferences.ini to UserPreferences.ini.before-safe-mode-<time>. --safe permanently rewrites the
+    graphics settings (tested: 1024x768 windowed, DirectX 9, medium detail), so this is the way back."""
+    import time as _time
+    prefs = s.docs_path / "UserPreferences.ini" if s.docs_path else None
+    if not prefs or not prefs.is_file():
+        return None
+    backup = prefs.with_name(f"UserPreferences.ini.before-safe-mode-{_time.strftime('%Y-%m-%d-%H%M%S')}")
+    shutil.copy2(prefs, backup)
+    return backup
+
+
+def client_option_args(s: Settings, safe: bool = False) -> list[str]:
+    """Game client options from the Play tab: --voiceoff, and --safe (safe display settings) for one start."""
+    return (["--voiceoff"] if s.voice_off else []) + (["--safe"] if safe else [])
+
+
 def apply_game_options(s: Settings, argv: list[str], env: dict[str, str]) -> tuple[list[str], dict[str, str]]:
     """Add the ticked game options (env variables and wrapper programs) to a game client command."""
     for key, label, _tip, needs in GAME_OPTIONS:
@@ -241,6 +258,8 @@ def apply_game_options(s: Settings, argv: list[str], env: dict[str, str]) -> tup
         env.setdefault("PROTON_LOG", "1")
     if s.opt_mangohud:
         env["MANGOHUD"] = "1"
+    if s.fps_limit > 0:
+        env.setdefault("DXVK_FRAME_RATE", str(s.fps_limit))
     # gamescope goes outermost: it drops LD_PRELOAD for its children, so gamemoderun has to sit inside it
     # (gamescope -- gamemoderun <game>) for GameMode's library to reach the game.
     wrap: list[str] = []

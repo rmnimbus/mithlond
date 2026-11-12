@@ -56,6 +56,8 @@ class Settings:
     language: str = "English"
     high_res: bool = True
     skip_intro: bool = True  # Turbine logo video every start + the one-time intro cinematic
+    fps_limit: int = 0  # 0 = no limit; DXVK_FRAME_RATE (Direct3D 11 through DXVK, i.e. Wine/Proton)
+    voice_off: bool = False  # --voiceoff: the game's voice chat system
     on_game_start: str = "stay"  # "stay", "minimize" or "close"
     accounts: list[Account] = field(default_factory=list)
     last_account: str = ""

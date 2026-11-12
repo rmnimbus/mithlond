@@ -55,6 +55,19 @@ logo video back at the next start.
 - **Account:** type it once and it's remembered. Tick *Save password* to store the password in your keyring.
   The line under the box says whether it was saved. **Forget** removes the account and its saved password.
 - **World:** shows each world's status (● open, ○ closed). ⟳ refreshes it.
+- **Options:**
+  - **Frame rate:** caps the frames per second (less heat, fan noise and power use). It sets `DXVK_FRAME_RATE`,
+    which DXVK (Wine/Proton's DirectX layer) applies. "No limit" turns it off. An `DXVK_FRAME_RATE` in your own
+    environment variables takes precedence.
+  - **Voice chat off:** starts the client without its voice chat system (`--voiceoff`).
+  - **Safe mode:** for the next start only (`--safe`). The game resets its graphics settings to safe values and
+    **keeps them** (tested: 1024×768 windowed, DirectX 9, medium detail). Use it when the game crashes or shows a
+    black screen after a graphics change. Mithlond first copies `UserPreferences.ini` to
+    `UserPreferences.ini.before-safe-mode-<date>` in the documents folder (the log shows the path); copy it back
+    over `UserPreferences.ini` to restore your settings. The box unticks itself after the start.
+
+  The client also lists a `--user <character>` option for logging straight into a character. It's ignored by
+  the current client (tested), so Mithlond doesn't offer it.
 - **PLAY:** logs in, waits in the queue and starts the client. Pressed while a game is running, it reads
   **PLAY ANOTHER** and starts a second client (for multiboxing or band play).
 - **STOP:** closes every LOTRO client, LotRO Companion, the official launcher and patcher, Maestro and WAN

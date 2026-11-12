@@ -672,6 +672,27 @@ class AdoptTests(unittest.TestCase):
 
 
 class GameOptionTests(unittest.TestCase):
+    def test_play_tab_options(self):
+        from mithlond import runner
+        s = Settings()
+        self.assertEqual((s.fps_limit, s.voice_off), (0, False))
+        self.assertEqual(runner.client_option_args(s), [])
+        argv, env = runner.apply_game_options(s, ["game.exe"], {})
+        self.assertNotIn("DXVK_FRAME_RATE", env)
+        s.fps_limit, s.voice_off = 60, True
+        self.assertEqual(runner.client_option_args(s, safe=True), ["--voiceoff", "--safe"])
+        _, env = runner.apply_game_options(s, ["game.exe"], {})
+        self.assertEqual(env["DXVK_FRAME_RATE"], "60")
+        _, env = runner.apply_game_options(s, ["game.exe"], {"DXVK_FRAME_RATE": "30"})
+        self.assertEqual(env["DXVK_FRAME_RATE"], "30")  # the user's own environment variable wins
+        with tempfile.TemporaryDirectory() as d:
+            s.documents_dir = d
+            self.assertIsNone(runner.backup_preferences(s))
+            (Path(d) / "UserPreferences.ini").write_text("[Render]\nGraphicsCore=D3D11\n")
+            b = runner.backup_preferences(s)
+            self.assertTrue(b.name.startswith("UserPreferences.ini.before-safe-mode-"))
+            self.assertEqual(b.read_text(), "[Render]\nGraphicsCore=D3D11\n")
+
     def test_options(self):
         from mithlond import runner
         with tempfile.TemporaryDirectory() as d:

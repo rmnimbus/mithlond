@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMessageBox,
-    QProgressBar, QPushButton, QSplitter, QStyle, QVBoxLayout, QWidget,
+    QProgressBar, QPushButton, QSpinBox, QSplitter, QStyle, QVBoxLayout, QWidget,
 )
 
 from .. import config, gls, keystore, procs, runner
@@ -75,6 +75,35 @@ class PlayTab(QWidget):
         form.addRow("", self.remember)
         form.addRow("", self.pw_state)
         form.addRow("World", world_row)
+        # Play options: frame rate limit, voice chat, safe mode for one start
+        self.fps = QSpinBox()
+        self.fps.setRange(0, 500)
+        self.fps.setSingleStep(10)
+        self.fps.setSpecialValueText("No limit")
+        self.fps.setSuffix(" FPS")
+        self.fps.setToolTip("Caps the frame rate (less heat, fan noise and power use). Works with Wine/Proton's\n"
+                            "DXVK (DirectX 11, the default); sets DXVK_FRAME_RATE.")
+        self.voice_off = QCheckBox("Voice chat off")
+        self.voice_off.setToolTip("Starts the game without its voice chat system (--voiceoff).")
+        self.safe_mode = QCheckBox("Safe mode")
+        self.safe_mode.setToolTip("For the next start only (--safe): the game resets its graphics settings to safe\n"
+                                  "values (1024x768 windowed, DirectX 9, medium detail) and keeps them. Use it when\n"
+                                  "the game crashes or shows a black screen after a graphics change. Mithlond backs\n"
+                                  "up UserPreferences.ini first (the log shows where). Unticks itself after the start.")
+        opts_row = QHBoxLayout()
+        opts_row.addWidget(QLabel("Frame rate"))
+        opts_row.addWidget(self.fps)
+        opts_row.addSpacing(12)
+        opts_row.addWidget(self.voice_off)
+        opts_row.addWidget(self.safe_mode)
+        opts_row.addStretch()
+        form.addRow("Options", opts_row)
+        s0 = self.ctx.settings
+        self.fps.setValue(max(0, s0.fps_limit))
+        self.voice_off.setChecked(s0.voice_off)
+        self.fps.valueChanged.connect(self._options_changed)
+        self.voice_off.toggled.connect(self._options_changed)
+
         form_w = QWidget()
         form_w.setLayout(form)
         form_w.setMaximumWidth(520)
@@ -463,6 +492,11 @@ class PlayTab(QWidget):
             exe = gls.client_executable(game, cfg, s.client)
             args = gls.client_arguments(cfg, sub.name, ws.login_server, ticket, world.chat_server,
                                         s.language, s.high_res) + runner.prefs_args(s)
+            if self.safe_mode.isChecked():
+                backup = runner.backup_preferences(s)
+                self.ctx.log("Safe mode: the game will reset its graphics settings. "
+                             + (f"Previous settings saved as {backup}" if backup else "No settings file to back up."))
+            args += runner.client_option_args(s, safe=self.safe_mode.isChecked())
             for note in runner.apply_intro_skip(s):  # after prefs_args, which may have just seeded the settings
                 self.ctx.log(f"Intro videos: {note}")
             argv, env = runner.windows_command(s, exe, args, join=self._join)
@@ -476,12 +510,19 @@ class PlayTab(QWidget):
         except (gls.GLSError, runner.RunnerError, OSError) as e:
             return self._failed(e)
         self.ctx.add_game(proc)
+        if self.safe_mode.isChecked():
+            self.safe_mode.setChecked(False)  # one start only
         self._set_busy(False, "")
         self._launched_at = time.monotonic()
         self._check_clients()
         self._watch.start()
         if s.on_game_start == "minimize":
             self.window().showMinimized()
+
+    def _options_changed(self, *_):
+        s = self.ctx.settings
+        s.fps_limit, s.voice_off = self.fps.value(), self.voice_off.isChecked()
+        self.ctx.save()
 
     def _failed(self, e: Exception) -> None:
         msg = str(e) or e.__class__.__name__
