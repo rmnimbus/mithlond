@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.1
+
+- **Fix: "corestrings.dll not found" with Proton-EM.** Proton-EM starts programs given as Linux paths through
+  `start.exe /unix`, which runs them from their own folder (`x64/`). There the 64-bit client can't find
+  `corestrings.dll`, which lives in the game folder. Mithlond now passes the game as a Windows path
+  (`Z:\…`), so every Proton build keeps the game folder as the working directory, like the official launcher.
+- LotRO Companion with Proton-EM-style builds: they can't run Companion's bundled Java directly, so Mithlond
+  detects them and uses Companion's own launcher. It's fine as long as Companion is up to date; use the
+  Companion tab's Update button.
+
 ## 1.2.0
 
 - **The Downloads tab now lists every LOTRO addon on lotrointerface.com** (about 1,180), not just the curated

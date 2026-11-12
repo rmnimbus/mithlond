@@ -54,6 +54,14 @@ when that's the case. Fix: `sudo groupadd -r gamemode && sudo usermod -aG gamemo
 Proton gets the setting and turns on its Wayland driver, but some Proton builds keep a game on XWayland as a
 fallback. LOTRO did with GE-Proton 11-6. The game runs normally either way.
 
+### "corestrings.dll not found. tried to print stringid 201"
+Fixed in 1.2.1. Proton-EM ran the game from its `x64` folder instead of the game folder. Update Mithlond.
+
+### Switching Proton builds on an existing prefix
+Running a different Proton build in a prefix makes Proton convert the prefix to its own version. Going back
+can print "Prefix has an invalid version?!". It usually still works after one slower start, but it's best to
+stick to one Proton build per prefix. If you share a prefix with Faugus or Steam, use the same build there.
+
 ### The password isn't remembered
 This needs `secret-tool` and a running Secret Service keyring: KWallet (`ksecretd`), GNOME Keyring or
 KeePassXC with Secret Service enabled. The line under the password box shows the reason if saving failed.

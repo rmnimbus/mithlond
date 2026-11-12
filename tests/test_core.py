@@ -379,6 +379,9 @@ class RunnerTests(unittest.TestCase):
                          extra_env={"DXVK_HUD": "fps"})
             argv, env = runner.windows_command(s, "game.exe", ["-x"])
             self.assertEqual(argv, [str(umu), "game.exe", "-x"])
+            argv, _ = runner.windows_command(s, "/volumes/games/lotro/x64/lotroclient64.exe", [])
+            self.assertEqual(argv[1], "Z:\\volumes\\games\\lotro\\x64\\lotroclient64.exe")
+            self.assertEqual(runner.dos_path("C:\\x.exe"), "C:\\x.exe")
             self.assertEqual((env["WINEPREFIX"], env["PROTONPATH"], env["DXVK_HUD"]), (str(Path(d) / "pfx"), "/p/GE", "fps"))
             self.assertNotIn("PROTON_VERB", env)
             _, env = runner.windows_command(s, "game.exe", [], join=True)
@@ -515,6 +518,25 @@ class CompanionTests(unittest.TestCase):
             s.companion_skip_updater = False
             argv, env, cwd = runner.companion_command(s)
             self.assertTrue(argv[1].endswith("LotRO Companion.exe"))
+            # Proton-EM-style builds (start.exe /unix) can't run javaw.exe directly: official launcher instead
+            umu = Path(d) / "umu-run"
+            umu.write_text("#!/bin/sh\n")
+            em = Path(d) / "Proton-EM"
+            em.mkdir()
+            (em / "proton").write_text('argv = [g_proton.wine64_bin, "c:\\\\windows\\\\system32\\\\start.exe", "/unix"]\n')
+            ge = Path(d) / "GE-Proton"
+            ge.mkdir()
+            (ge / "proton").write_text('log("launching with umu.exe")\n')
+            s = Settings(companion_dir=str(base), runner="umu", umu_run=str(umu), wine_prefix=str(Path(d) / "pfx"),
+                         proton_path=str(em))
+            self.assertTrue(runner.proton_uses_start_unix(s))
+            argv, env, cwd = runner.companion_command(s)
+            self.assertEqual(argv[1], str(base / "LotRO Companion.exe"))  # Linux path, official launcher
+            s.proton_path = str(ge)
+            self.assertFalse(runner.proton_uses_start_unix(s))
+            argv, env, cwd = runner.companion_command(s)
+            self.assertEqual(argv[1], java)  # direct launch, Linux path
+            self.assertIn("delta.games.lotro.Main", argv)
 
 
 class AdoptTests(unittest.TestCase):

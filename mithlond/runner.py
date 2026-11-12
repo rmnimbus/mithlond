@@ -21,8 +21,25 @@ class RunnerError(Exception):
     pass
 
 
+def dos_path(path: str | Path) -> str:
+    """'/volumes/x/game.exe' -> 'Z:\\volumes\\x\\game.exe' (Wine/Proton map Z: to /). Windows paths pass through."""
+    p = str(path)
+    return "Z:" + p.replace("/", "\\") if p.startswith("/") else p
+
+
+def proton_uses_start_unix(s: Settings) -> bool:
+    """True for Proton builds (e.g. Proton-EM) that start Linux paths with `start.exe /unix`. Those can't
+    run LotRO Companion's bundled javaw.exe directly (c0000135), so Companion goes through its own launcher."""
+    if s.runner != "umu" or not s.proton_path:
+        return False
+    try:
+        return "start.exe\", \"/unix" in (Path(s.proton_path).expanduser() / "proton").read_text(errors="replace")
+    except OSError:
+        return False
+
+
 def windows_command(s: Settings, exe: str | Path, args: list[str],
-                    join: bool = False) -> tuple[list[str], dict[str, str]]:
+                    join: bool = False, dos: bool = True) -> tuple[list[str], dict[str, str]]:
     """argv and environment to run a Windows executable with the configured runner.
 
     `join`: start alongside programs already running in the prefix. Proton's default verb
@@ -44,7 +61,10 @@ def windows_command(s: Settings, exe: str | Path, args: list[str],
             env["PROTONPATH"] = s.proton_path
         if join:
             env["PROTON_VERB"] = "run"
-        argv = [umu, str(exe), *args]
+        # Hand Proton a Windows path: some builds (Proton-EM) start Linux paths with `start.exe /unix`, which
+        # runs the program from its own folder instead of ours. lotroclient64.exe then misses corestrings.dll,
+        # which lives in the game folder, not in x64/ ("corestrings.dll not found").
+        argv = [umu, dos_path(exe) if dos else str(exe), *args]
     else:
         wine = shutil.which(s.wine_binary or "wine") or s.wine_binary
         if not wine or not Path(wine).exists():
@@ -134,7 +154,9 @@ def companion_command(s: Settings) -> tuple[list[str], dict[str, str], Path]:
         raise RunnerError(f"LotRO Companion is not installed in {base}. Use 'Download Companion' on the Companion tab.")
     app = companion.app_dir(base)
     native = s.companion_mode == "native"
-    if s.companion_skip_updater:
+    # Companion is started with a Linux path (dos=False): that route handles its folder name with a space and
+    # the bundled Java on every Proton tested; Windows paths fail for it on Proton-EM.
+    if s.companion_skip_updater and not (not native and proton_uses_start_unix(s)):
         try:
             java, args, cwd = companion.direct_launch(base, windows=not native)
         except companion.CompanionError:
@@ -142,7 +164,7 @@ def companion_command(s: Settings) -> tuple[list[str], dict[str, str], Path]:
         else:
             if native:
                 return [java, *args], host_env(), cwd
-            argv, env = windows_command(s, java, args, join=True)
+            argv, env = windows_command(s, java, args, join=True, dos=False)
             return argv, env, cwd
     if native:
         java = shutil.which("java")
@@ -159,7 +181,7 @@ def companion_command(s: Settings) -> tuple[list[str], dict[str, str], Path]:
     exe = next((p for p in (base / "LotRO Companion.exe", base.parent / "LotRO Companion.exe") if p.exists()), None)
     if exe is None:
         raise RunnerError(f"'LotRO Companion.exe' not found in {base}")
-    argv, env = windows_command(s, exe, [], join=True)
+    argv, env = windows_command(s, exe, [], join=True, dos=False)
     return argv, env, exe.parent
 
 
