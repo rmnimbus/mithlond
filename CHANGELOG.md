@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.4
 
 - **Play tab options:** a **frame rate limit** (DXVK), **Voice chat off**, and **Safe mode** for one start.
   Safe mode makes the game reset its graphics settings for good, so Mithlond backs up `UserPreferences.ini` first.
