@@ -1,5 +1,8 @@
 # Mithlond
 
+> **Disclaimer:** this project is entirely vibe coded. I have no idea what I'm doing, I just wanted an
+> all-in-one Linux launcher for LOTRO. Use it at your own risk.
+
 A native Linux launcher for **The Lord of the Rings Online**, built with Python and Qt.
 
 It logs you in and starts the game through Wine or Proton. It also installs plugins, skins and music from
