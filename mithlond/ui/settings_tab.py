@@ -164,7 +164,7 @@ class SettingsTab(QWidget):
         ab.addRow("", self.update_auto)
         ab.addRow("", self.update_status)
         ab.addRow("", subtle(f"{how} Releases: {selfupdate.RELEASES_PAGE.rsplit('/latest', 1)[0]}"))
-        about_box = QGroupBox("About & updates")
+        about_box = QGroupBox("About && updates")  # && = a literal & in Qt titles
         about_box.setLayout(ab)
 
         inner = QWidget()

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1
+
+- Fix the Settings section title, which showed "About _updates" instead of "About & updates".
+- First release delivered through the built-in updater: 1.4.0 offers it automatically.
+
 ## 1.4.0
 
 - **Mithlond updates itself.** At startup it checks GitHub for a newer release (can be turned off), and a banner
