@@ -60,7 +60,10 @@ password reaches the log or config.
 2. Installs `PySide6-Essentials` and `requests` into it.
 3. Prunes Qt to the QtCore/QtGui/QtWidgets bindings and the libraries they and the kept plugins need, by
    following `readelf -d` NEEDED entries. The build fails if a needed library is missing.
-4. Adds the app, an `AppRun` that runs Python in isolated mode (`-I`), and the desktop file and icon.
+4. Adds the xcb-util libraries Qt's X11 plugin needs that not every distribution installs (`libxcb-cursor`,
+   `-icccm`, `-image`, `-keysyms`, `-render-util`, `-util`): pinned Debian packages, checked by SHA-256 and
+   built for glibc ≤ 2.14. Without `libxcb-cursor`, Qt ≥ 6.5 aborts on X11 (e.g. Linux Mint).
+5. Adds the app, an `AppRun` that runs Python in isolated mode (`-I`), and the desktop file and icon.
 
 The result is about 45 MB. Inside the AppImage, programs that Mithlond starts (wine, umu-run, java,
 secret-tool…) get the user's original environment (`hostenv.py`).

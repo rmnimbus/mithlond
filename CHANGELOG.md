@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.2
+
+- **Fix: the AppImage didn't start on Linux Mint, Ubuntu and other distributions without `libxcb-cursor0`**
+  ("xcb-cursor0 or libxcb-cursor0 is needed to load the Qt xcb platform plugin", then "Aborted"). The
+  AppImage now brings that library and the other small xcb-util libraries Qt's X11 support needs, built for
+  glibc 2.14 or newer.
+- **If you're on 1.4.0 or 1.4.1 and it already runs**, it offers this update automatically. If it doesn't start,
+  download 1.4.2 from the releases page.
+
 ## 1.4.1
 
 - Fix the Settings section title, which showed "About _updates" instead of "About & updates".

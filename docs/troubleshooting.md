@@ -8,6 +8,11 @@ The file isn't marked executable. Browsers remove that permission from every dow
 `chmod +x Mithlond-*.AppImage`, or right-click → Properties → Permissions → "Allow executing file as program".
 Re-downloading the file removes the permission again.
 
+### "xcb-cursor0 or libxcb-cursor0 is needed to load the Qt xcb platform plugin" (Aborted)
+Versions before 1.4.2 needed the system's `libxcb-cursor0`, which Linux Mint, Ubuntu and some other
+distributions don't install by default. Use 1.4.2 or later, which brings its own copy. Alternatively,
+install the package: `sudo apt install libxcb-cursor0`.
+
 ### "Username or password is incorrect"
 That's the login server's answer. Check the account name: it's your LOTRO account name, not an email address
 or character name.
