@@ -10,7 +10,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QAbstractItemView, QComboBox, QFileDialog, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMessageBox,
+    QAbstractItemView, QComboBox, QFileDialog, QHBoxLayout, QInputDialog, QHeaderView, QLabel, QLineEdit, QMessageBox,
     QProgressBar, QPushButton, QSplitter, QStyle, QTableWidget, QTableWidgetItem, QTabWidget, QTextBrowser,
     QVBoxLayout, QWidget,
 )
@@ -69,11 +69,14 @@ class AddonPane(QWidget):
         self.refresh = QPushButton("Refresh")
         self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.from_file = QPushButton("Install from file…")
+        self.from_link = QPushButton("Install from link…")
+        self.from_link.setToolTip("Install any addon from its lotrointerface.com page, even one that isn't in this list")
         top = QHBoxLayout()
         top.addWidget(self.search, 2)
         top.addWidget(self.show_filter)
         top.addWidget(self.category, 1)
         top.addWidget(self.refresh)
+        top.addWidget(self.from_link)
         top.addWidget(self.from_file)
 
         self.table = QTableWidget(0, len(self.COLS))
@@ -120,6 +123,7 @@ class AddonPane(QWidget):
         self.category.currentIndexChanged.connect(self.fill)
         self.refresh.clicked.connect(lambda: self.load(force=True))
         self.from_file.clicked.connect(self.install_from_file)
+        self.from_link.clicked.connect(self.install_from_link)
         self.table.itemSelectionChanged.connect(self._selection)
         self.table.doubleClicked.connect(lambda _: self.install_selected())
         self.install_btn.clicked.connect(self.install_selected)
@@ -269,7 +273,7 @@ class AddonPane(QWidget):
     def _set_busy(self, busy: bool) -> None:
         self._busy = busy
         self.progress.setVisible(busy)
-        for w in (self.refresh, self.from_file, self.update_all):
+        for w in (self.refresh, self.from_file, self.from_link, self.update_all):
             w.setEnabled(not busy)
         self._selection()
 
@@ -359,6 +363,24 @@ class AddonPane(QWidget):
             items.append(a)
             files[a.id] = p
         self._install(items, files)
+
+    def install_from_link(self) -> None:
+        text, ok = QInputDialog.getText(self, "Install from link",
+                                        "lotrointerface.com link or addon number, e.g.\n"
+                                        "https://www.lotrointerface.com/downloads/info1218-.html")
+        if not ok or not text.strip():
+            return
+        self.status.setText("Looking it up on lotrointerface.com…")
+
+        def found(a):
+            known = next((r for r in self.remote if r.id == a.id), None)
+            self._install([known or a])
+
+        def failed(e):
+            self.status.setText(str(e))
+            QMessageBox.warning(self, "Install from link", str(e))
+
+        run_task(lambda: addons.addon_from_link(text, self.kind), on_done=found, on_error=failed)
 
     def uninstall_selected(self) -> None:
         target = self._check_target()

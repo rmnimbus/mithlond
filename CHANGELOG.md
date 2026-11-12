@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2
+
+- **Plugin list now merges both lotrointerface.com lists** (OneLauncher's and LOTRO Plugin Compendium's):
+  474 plugins instead of 412. Plugins like Festival Buddy II were missing before.
+- **Install from link…** on the Downloads tab installs any lotrointerface.com addon from its page link or
+  number, including ones that aren't in either list.
+
 ## 1.1.1
 
 Every game option was tested with real game launches (login → character select, 60 s running):

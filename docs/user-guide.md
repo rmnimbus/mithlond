@@ -67,6 +67,9 @@ Three sub-tabs list **Plugins**, **Skins** and **Music packs** from lotrointerfa
 - **Uninstall** removes exactly the files that addon installed. Files another addon also uses are kept.
   Plugin settings in `PluginData` are kept too.
 - **Install from file…** installs a `.zip`, `.rar` or `.7z` you downloaded yourself.
+- **Install from link…** installs any addon from its lotrointerface.com page. Paste the link (e.g.
+  `https://www.lotrointerface.com/downloads/info1218-.html`) or just the number. The lists come from lotrointerface's
+  curated plugin lists (OneLauncher's and Plugin Compendium's, merged), so a few addons on the site aren't in them.
 
 Plugins installed by hand or with LOTRO Plugin Compendium are picked up automatically (through their
 `.plugincompendium` files) and can then be updated and uninstalled here as well.

@@ -25,10 +25,14 @@ import requests
 from .config import CACHE_DIR, DATA_DIR
 from .hostenv import host_env
 
+# lotrointerface.com publishes curated lists rather than one full catalogue. The OneLauncher and
+# Plugin Compendium plugin lists overlap only partly (412 + 335 entries, 474 together in Nov 2026),
+# so plugins come from both.
 FEEDS = {
-    "plugin": "https://api.lotrointerface.com/fav/OneLauncher-Plugins.xml",
-    "skin": "https://api.lotrointerface.com/fav/OneLauncher-Themes.xml",
-    "music": "https://api.lotrointerface.com/fav/OneLauncher-Music.xml",
+    "plugin": ["https://api.lotrointerface.com/fav/OneLauncher-Plugins.xml",
+               "https://api.lotrointerface.com/fav/plugincompendium.xml"],
+    "skin": ["https://api.lotrointerface.com/fav/OneLauncher-Themes.xml"],
+    "music": ["https://api.lotrointerface.com/fav/OneLauncher-Music.xml"],
 }
 INFO_URL = "https://www.lotrointerface.com/downloads/info{id}"
 DOWNLOAD_URL = "https://www.lotrointerface.com/downloads/download{id}"
@@ -101,24 +105,47 @@ def parse_feed(xml_bytes: bytes, kind: str) -> list[RemoteAddon]:
     return out
 
 
-def fetch_feed(kind: str, force: bool = False) -> list[RemoteAddon]:
-    cache = CACHE_DIR / f"feed-{kind}.xml"
+def merge_feeds(lists: list[list[RemoteAddon]]) -> list[RemoteAddon]:
+    """Union by lotrointerface id; when an addon is in several lists, keep the most recently updated entry."""
+    by_id: dict[str, RemoteAddon] = {}
+    for addons in lists:
+        for a in addons:
+            if a.id not in by_id or a.updated > by_id[a.id].updated:
+                by_id[a.id] = a
+    return list(by_id.values())
+
+
+def _fetch_one(url: str, kind: str, force: bool) -> list[RemoteAddon]:
+    cache = CACHE_DIR / ("feed-" + url.rsplit("/", 1)[-1])
     if not force and cache.exists() and time.time() - cache.stat().st_mtime < FEED_TTL:
         try:
             return parse_feed(cache.read_bytes(), kind)
         except ET.ParseError:
             pass
     try:
-        r = requests.get(FEEDS[kind], timeout=60)
+        r = requests.get(url, timeout=60)
         r.raise_for_status()
         addons = parse_feed(r.content, kind)
     except (requests.RequestException, ET.ParseError) as e:
         if cache.exists():  # offline: fall back to a stale cache
             return parse_feed(cache.read_bytes(), kind)
-        raise AddonError(f"Could not load the lotrointerface.com list: {e}") from e
+        raise AddonError(f"Could not load {url}: {e}") from e
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_bytes(r.content)
     return addons
+
+
+def fetch_feed(kind: str, force: bool = False) -> list[RemoteAddon]:
+    """All addons of a kind from every list; works as long as at least one list loads."""
+    lists, errors = [], []
+    for url in FEEDS[kind]:
+        try:
+            lists.append(_fetch_one(url, kind, force))
+        except AddonError as e:
+            errors.append(str(e))
+    if not lists:
+        raise AddonError("Could not load the lotrointerface.com lists: " + "; ".join(errors))
+    return merge_feeds(lists)
 
 
 # ---- manifest ---------------------------------------------------------------
@@ -566,6 +593,47 @@ def match_remote(inst: InstalledAddon, remote: list[RemoteAddon]) -> RemoteAddon
     if len(hits) == 1:
         return hits[0]
     return None
+
+
+def parse_link(text: str) -> str | None:
+    """The lotrointerface id from a link (…/info1218-Name.html, …/download1218, fileinfo.php?id=1218) or a number."""
+    text = text.strip()
+    m = re.search(r"(?:info|download|fileinfo\.php\?id=|downloads/)(\d+)", text) or re.fullmatch(r"#?(\d+)", text)
+    return m.group(1) if m else None
+
+
+def parse_info_page(addon_id: str, page: str, kind: str) -> RemoteAddon:
+    import html as _html
+    title = re.search(r"<title>\s*LoTROInterface\s*:\s*(.*?)\s*</title>", page, re.S | re.I)
+    if not title:
+        raise AddonError(f"lotrointerface.com has no addon #{addon_id}")
+    name = _html.unescape(title.group(1).split(" : ")[-1]).strip()
+    text = _html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page)))
+    ver = re.search(r"Version:\s*(\S+)", text)
+    author = re.search(r"(?:Author|Uploaded By):\s*(.+?)\s*\[", text)
+    cat = re.search(r"Category\s*:\s*(.+?)\s+" + re.escape(name), text)
+    date = re.search(r"Date:\s*(\d\d-\d\d-\d{4} \d\d?:\d\d [AP]M)", text)
+    try:
+        updated = int(time.mktime(time.strptime(date.group(1), "%m-%d-%Y %I:%M %p"))) if date else 0
+    except ValueError:
+        updated = 0
+    return RemoteAddon(id=addon_id, kind=kind, name=name, author=author.group(1).strip() if author else "",
+                       version=ver.group(1) if ver else "", updated=updated, downloads=0,
+                       category=cat.group(1).strip() if cat else "", description="", file=f"{addon_id}.zip",
+                       size=0, url=DOWNLOAD_URL.format(id=addon_id))
+
+
+def addon_from_link(text: str, kind: str) -> RemoteAddon:
+    """Look up any lotrointerface addon by link or id (for addons that aren't in the curated lists)."""
+    addon_id = parse_link(text)
+    if not addon_id:
+        raise AddonError("That doesn't look like a lotrointerface.com link or addon number.")
+    try:
+        r = requests.get(INFO_URL.format(id=addon_id), timeout=30, headers={"User-Agent": "Mozilla/5.0 Mithlond"})
+        r.raise_for_status()
+    except requests.RequestException as e:
+        raise AddonError(f"Could not open lotrointerface.com: {e}") from e
+    return parse_info_page(addon_id, r.text, kind)
 
 
 def local_addon(path: Path, kind: str) -> RemoteAddon:

@@ -3,6 +3,7 @@
 import os
 import sys
 import tempfile
+import time
 import unittest
 import zipfile
 from pathlib import Path
@@ -152,6 +153,31 @@ class AddonTests(unittest.TestCase):
         [a] = addons.parse_feed(xml, "plugin")
         self.assertEqual((a.id, a.name, a.version, a.updated, a.url), ("612", "Wallet", "1.12", 1700000000,
                                                                        "http://x/download612"))
+
+    def test_links(self):
+        for t in ("https://www.lotrointerface.com/downloads/info1218-.html", "info1218-Festival.html",
+                  "http://www.lotrointerface.com/downloads/download1218", "fileinfo.php?id=1218", "1218", " #1218 "):
+            self.assertEqual(addons.parse_link(t), "1218", t)
+        self.assertIsNone(addons.parse_link("https://example.com/foo"))
+        page = ('<html><title>LoTROInterface : Festival Buddy II : Festival Buddy II</title><body>'
+                '<td>Version: 2.5.1</td> Category : Other Festival Buddy II Interface Information '
+                'Uploaded By: b414213562 [ List b414213562\'s interfaces ] Date: 10-20-2026 02:16 PM</body></html>')
+        a = addons.parse_info_page("1218", page, "plugin")
+        self.assertEqual((a.name, a.version, a.category, a.author, a.url),
+                         ("Festival Buddy II", "2.5.1", "Other", "b414213562",
+                          "https://www.lotrointerface.com/downloads/download1218"))
+        self.assertEqual(time.strftime("%Y-%m-%d", time.localtime(a.updated)), "2026-10-20")
+        with self.assertRaises(addons.AddonError):
+            addons.parse_info_page("9", "<html>nothing</html>", "plugin")
+
+    def test_merge_feeds(self):
+        def ra(i, v, upd):
+            return addons.RemoteAddon(id=i, kind="plugin", name=f"P{i}", author="", version=v, updated=upd,
+                                      downloads=0, category="", description="", file="", size=0, url="")
+        merged = {a.id: a for a in addons.merge_feeds([[ra("1", "1.0", 10), ra("2", "2.0", 5)],
+                                                       [ra("1", "1.1", 20), ra("1218", "2.5.1", 7)]])}
+        self.assertEqual(sorted(merged), ["1", "1218", "2"])
+        self.assertEqual(merged["1"].version, "1.1")  # newest wins
 
     def test_versions(self):
         self.assertTrue(addons.is_newer("1.10", "1.9"))
@@ -379,7 +405,6 @@ class ProcTests(unittest.TestCase):
                 for _ in range(50):
                     if any(c.pid == p.pid for c in procs.game_clients()):
                         break
-                    import time
                     time.sleep(0.05)
                 self.assertIn(p.pid, [c.pid for c in procs.game_clients()])
                 self.assertIn(p.pid, [c.pid for c in procs.windows_programs_in_prefix(pfx)])
