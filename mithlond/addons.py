@@ -61,6 +61,7 @@ class RemoteAddon:
     file: str
     size: int
     url: str
+    site_only: bool = False  # from the site catalogue: version/description load on demand
 
     @property
     def info_url(self) -> str:
@@ -133,6 +134,36 @@ def _fetch_one(url: str, kind: str, force: bool) -> list[RemoteAddon]:
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_bytes(r.content)
     return addons
+
+
+def fetch_all(kind: str, force: bool = False, progress=None) -> list[RemoteAddon]:
+    """The curated lists plus every other addon from lotrointerface.com's full catalogue.
+    If the catalogue can't be read, the curated lists alone are returned."""
+    from . import catalog
+    listed = fetch_feed(kind, force)
+    try:
+        entries = catalog.load(force, progress)
+    except catalog.CatalogError:
+        return listed
+    have = {a.id for a in listed}
+    # Site-only entries: skins from skin categories on the Skins tab, everything else on Plugins.
+    want_skin = kind == "skin"
+    if kind == "music":
+        return listed
+    extra = [RemoteAddon(id=e.id, kind=kind, name=e.name, author=e.author, version="", updated=e.updated,
+                         downloads=e.downloads, category=e.category, description="", file=f"{e.id}.zip",
+                         size=e.size, url=DOWNLOAD_URL.format(id=e.id), site_only=True)
+             for e in entries if e.id not in have and (e.category in catalog.SKIN_CATEGORIES) == want_skin]
+    return listed + extra
+
+
+def fill_details(a: RemoteAddon) -> RemoteAddon:
+    """Load version and description of a site-only addon from its page (in place)."""
+    d = addon_from_link(a.id, a.kind)
+    a.version, a.description = d.version, d.description or a.description
+    a.author = a.author or d.author
+    a.site_only = False
+    return a
 
 
 def fetch_feed(kind: str, force: bool = False) -> list[RemoteAddon]:
@@ -617,9 +648,16 @@ def parse_info_page(addon_id: str, page: str, kind: str) -> RemoteAddon:
         updated = int(time.mktime(time.strptime(date.group(1), "%m-%d-%Y %I:%M %p"))) if date else 0
     except ValueError:
         updated = 0
+    desc = ""
+    dm = re.search(r"<b>Description</b>.*?</div>\s*</div>\s*<div[^>]*>(.*?)(?:<div class=\"thead\"|$)", page, re.S)
+    if dm:
+        body = re.sub(r"<br\s*/?>", "\n", re.sub(r"\s*\n\s*", " ", dm.group(1)))
+        desc = _html.unescape(re.sub(r"<[^>]+>", "", body))
+        desc = re.split(r"\s*Archive List \(Old Versions\)|\s*File Statistics", desc)[0]
+        desc = re.sub(r"\n{3,}", "\n\n", desc).strip()
     return RemoteAddon(id=addon_id, kind=kind, name=name, author=author.group(1).strip() if author else "",
                        version=ver.group(1) if ver else "", updated=updated, downloads=0,
-                       category=cat.group(1).strip() if cat else "", description="", file=f"{addon_id}.zip",
+                       category=cat.group(1).strip() if cat else "", description=desc[:20000], file=f"{addon_id}.zip",
                        size=0, url=DOWNLOAD_URL.format(id=addon_id))
 
 

@@ -16,6 +16,7 @@ mithlond/
   addons.py       lotrointerface feeds, archive extraction (zip natively, rar/7z via bsdtar/7z), install /
                   uninstall with a manifest, .plugincompendium compatibility, adopting existing plugins
   songs.py        ABC parsing, song import, SongbookData.plugindata writer
+  catalog.py      lotrointerface.com full catalogue from the site's category pages (no API exists for it)
   news.py         lotro.com launcher feed, HTML sanitizer, weekly coupon extraction
   companion.py    LotRO Companion: version, SourceForge releases, update/install, direct launch
   tools.py        Maestro / BruTE / WAN Songbook Filler: latest release info, download

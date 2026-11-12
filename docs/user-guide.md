@@ -60,6 +60,12 @@ them, or cancel.
 
 Three sub-tabs list **Plugins**, **Skins** and **Music packs** from lotrointerface.com.
 
+The lists combine lotrointerface's curated lists (OneLauncher's and Plugin Compendium's, which include
+versions and descriptions) with **the site's full catalogue**, read from its category pages and cached for a
+day. The first load of the day takes about half a minute; the status line shows progress. Addons that are only
+in the catalogue show "…" as their latest version until you select one, which loads its version and
+description. **Hide outdated** (on by default) hides the "Outdated LotRO Interfaces" category.
+
 - Filter with *Installed / Updates available / Not installed*, a category, or search. Installed entries are
   green, and those with updates are gold.
 - **Install / Update** downloads and installs, including a plugin's dependencies. **Update all** updates

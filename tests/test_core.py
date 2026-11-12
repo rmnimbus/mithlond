@@ -585,6 +585,70 @@ class GameOptionTests(unittest.TestCase):
                 os.environ["PATH"] = old
 
 
+CAT_INDEX = """
+<a href="index.php?s=x&amp;cid=8&amp;dp=0&amp;sh=full"><b>LotRO Stand-Alone Plugins</b></a>
+<a href="index.php?s=x&amp;cid=29&amp;dp=0&amp;sh=full">Other</a>
+<a href="index.php?s=x&amp;cid=48&amp;dp=0&amp;sh=full"><b>Outdated LotRO Interfaces</b></a>
+<a href="index.php?s=x&amp;cid=37&amp;dp=0&amp;sh=full"><b>DDO Complete Sets</b></a>
+<a href="index.php?s=x&amp;cid=47&amp;dp=0&amp;sh=full">Other</a>
+"""
+CAT_PAGE = """<table><tr>
+ <td class="alt2" nowrap><a href="info1218-FestivalBuddyII.html"><img src="i.gif" Alt="View file info."></a></td>
+ <td class="alt1" align="left"><a href="info1218-FestivalBuddyII.html">Festival Buddy II</a>  &nbsp; </td>
+ <td class="alt2"><div class="smallfont">b414213562</div></td>
+ <td class="alt1"><div class="smallfont">15.33 MB</div></td>
+ <td class="alt2"><div class="smallfont">92616</div></td>
+ <td class="alt1"><div class="smallfont" align="left"><div align="left">by <a href="/m">b414213562</a></div>
+ <div align="left">10-20-2026 <span class="time">02:22 PM</span></div></div></td>
+</tr><tr>
+ <td class="alt1" align="left"><a href="fileinfo.php?s=abc&amp;id=1291">Loot Watcher</a></td>
+ <td class="alt2"><div class="smallfont">whiterabbit963</div></td>
+ <td class="alt1"><div class="smallfont">46.04 Kb</div></td>
+ <td class="alt2"><div class="smallfont">1387</div></td>
+ <td class="alt1"><div class="smallfont">11-11-2026 <span class="time">01:07 AM</span></div></td>
+</tr></table> Page 2 of 5 <a href="cat50.html">Burglar</a>"""
+
+
+class CatalogTests(unittest.TestCase):
+    def test_categories(self):
+        from mithlond import catalog
+        cats = catalog.parse_categories(CAT_INDEX)
+        self.assertEqual(cats, [("8", "LotRO Stand-Alone Plugins"), ("29", "Other"), ("48", "Outdated LotRO Interfaces")])
+        self.assertEqual(catalog.parse_categories('<a href="cat50.html">Burglar</a>'), [("50", "Burglar")])
+
+    def test_listing(self):
+        from mithlond import catalog
+        rows, page, pages = catalog.parse_listing(CAT_PAGE, "Other")
+        self.assertEqual((page, pages), (2, 5))
+        a, b = rows
+        self.assertEqual((a.id, a.name, a.author, a.downloads, a.category), ("1218", "Festival Buddy II", "b414213562",
+                                                                            92616, "Other"))
+        self.assertEqual(a.size, int(15.33 * 1024 * 1024))
+        self.assertEqual(time.strftime("%Y-%m-%d %H:%M", time.localtime(a.updated)), "2026-10-20 14:22")
+        self.assertEqual((b.id, b.name, b.size, b.downloads), ("1291", "Loot Watcher", int(46.04 * 1024), 1387))
+
+    def test_fetch_all_merges(self):
+        from mithlond import catalog
+        listed = [addons.RemoteAddon(id="1291", kind="plugin", name="Loot Watcher", author="w", version="v1.3.1",
+                                     updated=1, downloads=1, category="Bags", description="d", file="", size=0, url="")]
+        entries = [catalog.Entry("1291", "Loot Watcher", "Other", "w", 1, 1, 1),
+                   catalog.Entry("1218", "Festival Buddy II", "Other", "b", 1, 1, 1),
+                   catalog.Entry("77", "Some Skin", "Graphical Modifications (Skins)", "s", 1, 1, 1)]
+        orig = addons.fetch_feed, catalog.load
+        addons.fetch_feed = lambda kind, force=False: list(listed) if kind == "plugin" else []
+        catalog.load = lambda force=False, progress=None: entries
+        try:
+            plugins = {a.id: a for a in addons.fetch_all("plugin")}
+            skins = {a.id: a for a in addons.fetch_all("skin")}
+        finally:
+            addons.fetch_feed, catalog.load = orig
+        self.assertEqual(sorted(plugins), ["1218", "1291"])
+        self.assertEqual(plugins["1291"].version, "v1.3.1")  # curated entry kept
+        self.assertTrue(plugins["1218"].site_only and plugins["1218"].version == "")
+        self.assertEqual(plugins["1218"].url, "https://www.lotrointerface.com/downloads/download1218")
+        self.assertEqual(sorted(skins), ["77"])
+
+
 class GameModeTests(unittest.TestCase):
     def test_group_check(self):
         import grp

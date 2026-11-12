@@ -10,7 +10,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QAbstractItemView, QComboBox, QFileDialog, QHBoxLayout, QInputDialog, QHeaderView, QLabel, QLineEdit, QMessageBox,
+    QAbstractItemView, QCheckBox, QComboBox, QFileDialog, QHBoxLayout, QInputDialog, QHeaderView, QLabel, QLineEdit, QMessageBox,
     QProgressBar, QPushButton, QSplitter, QStyle, QTableWidget, QTableWidgetItem, QTabWidget, QTextBrowser,
     QVBoxLayout, QWidget,
 )
@@ -64,6 +64,9 @@ class AddonPane(QWidget):
         self.search.setPlaceholderText(f"Search {KIND_LABEL[kind].lower()}…")
         self.show_filter = QComboBox()
         self.show_filter.addItems(["All", "Installed", "Updates available", "Not installed"])
+        self.hide_outdated = QCheckBox("Hide outdated")
+        self.hide_outdated.setToolTip("Hide lotrointerface's 'Outdated LotRO Interfaces' category (installed ones stay visible)")
+        self.hide_outdated.setChecked(True)
         self.category = QComboBox()
         self.category.addItem("All categories")
         self.refresh = QPushButton("Refresh")
@@ -74,6 +77,7 @@ class AddonPane(QWidget):
         top = QHBoxLayout()
         top.addWidget(self.search, 2)
         top.addWidget(self.show_filter)
+        top.addWidget(self.hide_outdated)
         top.addWidget(self.category, 1)
         top.addWidget(self.refresh)
         top.addWidget(self.from_link)
@@ -120,6 +124,7 @@ class AddonPane(QWidget):
 
         self.search.textChanged.connect(self.fill)
         self.show_filter.currentIndexChanged.connect(self.fill)
+        self.hide_outdated.toggled.connect(self.fill)
         self.category.currentIndexChanged.connect(self.fill)
         self.refresh.clicked.connect(lambda: self.load(force=True))
         self.from_file.clicked.connect(self.install_from_file)
@@ -144,13 +149,38 @@ class AddonPane(QWidget):
         return {"plugin": addons.scan_plugins, "skin": addons.scan_skins, "music": addons.scan_music}[self.kind](t)
 
     def load(self, force: bool = False) -> None:
-        self.status.setText("Loading list from lotrointerface.com…")
+        """Curated lists first (fast), then lotrointerface's full catalogue (cached for a day)."""
+        self.status.setText("Loading lists from lotrointerface.com…")
         self.refresh.setEnabled(False)
-        run_task(lambda: addons.fetch_feed(self.kind, force), on_done=self._loaded, on_error=self._load_failed)
+
+        def full(_):
+            if self.kind == "music":
+                self.refresh.setEnabled(True)
+                return
+            run_task(lambda progress: addons.fetch_all(self.kind, force, progress),
+                     on_done=lambda r: (self._loaded(r), self.refresh.setEnabled(True), self._check_site_only()),
+                     on_error=lambda e: (self.refresh.setEnabled(True), self.ctx.log(f"Full catalogue: {e}")),
+                     on_progress=lambda msg: self.status.setText(msg))
+
+        run_task(lambda: addons.fetch_feed(self.kind, force), on_done=lambda r: (self._loaded(r), full(r)),
+                 on_error=self._load_failed)
+
+    def _check_site_only(self) -> None:
+        """Installed addons known only from the site catalogue: load their pages to see if there's an update."""
+        todo = [r.remote for r in self.rows if r.installed and r.remote and r.remote.site_only]
+        if not todo:
+            return
+
+        def work():
+            for a in todo:
+                try:
+                    addons.fill_details(a)
+                except addons.AddonError:
+                    pass
+        run_task(work, on_done=lambda _: self.rescan())
 
     def _loaded(self, remote: list[addons.RemoteAddon]) -> None:
         self.remote = remote
-        self.refresh.setEnabled(True)
         cats = sorted({r.category for r in remote if r.category})
         cur = self.category.currentText()
         self.category.blockSignals(True)
@@ -206,6 +236,8 @@ class AddonPane(QWidget):
                 continue
             if cat and (not r or r.category != cat):
                 continue
+            if self.hide_outdated.isChecked() and r and r.category == "Outdated LotRO Interfaces" and not i:
+                continue
             if q and q not in f"{row.name} {(r or i).author} {r.category if r else ''}".lower():  # type: ignore[union-attr]
                 continue
             n = self.table.rowCount()
@@ -214,7 +246,8 @@ class AddonPane(QWidget):
             vals = [
                 SortItem(row.name), SortItem((r or i).author),  # type: ignore[union-attr]
                 SortItem(r.category if r else "(not on lotrointerface)"),
-                SortItem(i.version or "✔" if i else ""), SortItem(r.version if r else ""),
+                SortItem(i.version or "✔" if i else ""),
+                SortItem(r.version if r and r.version else ("…" if r and r.site_only else "")),
                 SortItem(updated, r.updated if r else 0), SortItem(f"{r.downloads:,}" if r else "", r.downloads if r else 0),
             ]
             vals[0].setData(Qt.UserRole, idx)
@@ -262,7 +295,32 @@ class AddonPane(QWidget):
             parts.append(f"<p>Requires: {html.escape(', '.join(i.dependencies))}</p>")
         if r and r.description:
             parts.append("<p style='white-space:pre-wrap'>" + html.escape(r.description.strip()) + "</p>")
+        elif r and r.site_only:
+            parts.append("<p><i>Loading details from lotrointerface.com…</i></p>")
+            self._load_details(row)
         self.details.setHtml("".join(parts))
+
+    def _load_details(self, row: Row) -> None:
+        r = row.remote
+        if r is None or getattr(r, "_loading", False):
+            return
+        r._loading = True  # type: ignore[attr-defined]
+
+        def done(_):
+            r._loading = False  # type: ignore[attr-defined]
+            for n in range(self.table.rowCount()):  # update the Latest cell in place
+                it = self.table.item(n, 0)
+                if it and self.rows[it.data(Qt.UserRole)] is row:
+                    self.table.item(n, 4).setText(r.version)
+            sel = self.selected_rows()
+            if len(sel) == 1 and sel[0] is row:
+                self._show_details(row)
+
+        def failed(e):
+            r._loading = False  # type: ignore[attr-defined]
+            self.details.setHtml(f"<h3>{html.escape(row.name)}</h3><p>Couldn't load details: {html.escape(str(e))}</p>")
+
+        run_task(lambda: addons.fill_details(r), on_done=done, on_error=failed)
 
     def _open_web(self) -> None:
         rows = self.selected_rows()
@@ -303,6 +361,8 @@ class AddonPane(QWidget):
                 if local_files and a.id in local_files:
                     archive = local_files[a.id]
                 else:
+                    if a.site_only:
+                        addons.fill_details(a)  # version for the install record
                     archive = addons.download(a, lambda d, t: progress(("bytes", d, t)))
                 progress(("label", f"Installing {a.name}…"))
                 files = addons.install_archive(self.kind, archive, a, target)

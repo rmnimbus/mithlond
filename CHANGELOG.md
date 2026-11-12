@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+- **The Downloads tab now lists every LOTRO addon on lotrointerface.com** (about 1,180), not just the curated
+  lists. lotrointerface has no API for the full catalogue, so Mithlond reads the site's own category pages
+  (about 70 pages, politely paced, cached for a day). The curated lists show up instantly; the rest follow
+  within about half a minute on the first load of the day.
+- Addons that are only in the full catalogue load their version and description when you select them. Ones
+  you have installed are checked for updates in the background.
+- New **Hide outdated** checkbox, on by default, for the 400+ addons in "Outdated LotRO Interfaces".
+
 ## 1.1.2
 
 - **Plugin list now merges both lotrointerface.com lists** (OneLauncher's and LOTRO Plugin Compendium's):
