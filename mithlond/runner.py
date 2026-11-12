@@ -24,7 +24,7 @@ class RunnerError(Exception):
 
 
 def dos_path(path: str | Path) -> str:
-    """'/volumes/x/game.exe' -> 'Z:\\volumes\\x\\game.exe' (Wine/Proton map Z: to /). Windows paths pass through."""
+    """'/home/me/Games/x/game.exe' -> 'Z:\\home\\me\\Games\\x\\game.exe' (Wine/Proton map Z: to /). Windows paths pass through."""
     p = str(path)
     return "Z:" + p.replace("/", "\\") if p.startswith("/") else p
 
