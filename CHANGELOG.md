@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.1
+
+Every game option was tested with real game launches (login → character select, 60 s running):
+
+- **Fix: GameMode with gamescope.** The order is now `gamescope -- gamemoderun <game>`. gamescope drops
+  GameMode's preload for the game, so Mithlond also registers the game process with `gamemoded` once it starts.
+- Settings warns when GameMode is ticked but your user isn't in the `gamemode` group. Without that group,
+  GameMode has no effect: polkit refuses its CPU-governor helper. Distributions without systemd-sysusers, such as
+  Artix, don't create the group.
+- Native Wayland: the tooltip now says that Proton may still keep a game on XWayland. LOTRO stayed on XWayland
+  with GE-Proton 11-6, even though Proton turned on its Wayland driver.
+
 ## 1.1.0
 
 - The Addons tab is now **Downloads**, and the Songs tab is now **Music**.

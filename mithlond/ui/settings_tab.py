@@ -5,7 +5,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFileDialog, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
     QMessageBox, QPlainTextEdit,
@@ -119,6 +119,11 @@ class SettingsTab(QWidget):
         self.gamescope_args.setPlaceholderText("gamescope arguments, e.g. -f -W 2560 -H 1440")
         self.gamescope_args.setToolTip("Arguments passed to gamescope before '--'")
         run.addRow("Game options", grid)
+        self.opt_warning = QLabel()
+        self.opt_warning.setObjectName("bad")
+        self.opt_warning.setWordWrap(True)
+        self.opt_warning.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        run.addRow("", self.opt_warning)
         run.addRow("gamescope arguments", self.gamescope_args)
         run_box = QGroupBox("Runners and Prefix")
         run_box.setLayout(run)
@@ -310,6 +315,9 @@ class SettingsTab(QWidget):
             state = "existing prefix" if (prefix / "system.reg").exists() else "will be created on first start"
             text, ok = f"✔ Using {prefix} ({state})", True
         self.runner_info.setText(text)
+        gm = runner.gamemode_problem() if s.opt_gamemode else None
+        self.opt_warning.setText(f"✘ GameMode: {gm}" if gm else "")
+        self.opt_warning.setVisible(bool(gm))
         self.runner_info.setObjectName("ok" if ok else "bad")
         self.runner_info.style().unpolish(self.runner_info)
         self.runner_info.style().polish(self.runner_info)

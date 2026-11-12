@@ -151,6 +151,7 @@ class PlayTab(QWidget):
         self._watch.setInterval(2000)
         self._watch.timeout.connect(self._check_clients)
         self._launched_at = 0.0
+        self._gm_registered: set[int] = set()
         ctx.settings_changed.connect(self._settings_changed)
 
         self._fill_accounts()
@@ -288,7 +289,15 @@ class PlayTab(QWidget):
         if not self.ctx.games:
             self._watch.stop()
             return
-        clients = len(procs.game_clients())
+        found = procs.game_clients()
+        clients = len(found)
+        s = self.ctx.settings
+        if s.opt_gamemode and s.opt_gamescope:  # gamescope blocks gamemoderun's preload: register directly
+            for c in found:
+                if c.pid not in self._gm_registered:
+                    self._gm_registered.add(c.pid)
+                    ok = runner.gamemode_register(c.pid)
+                    self.ctx.log(f"GameMode: {'registered' if ok else 'could not register'} game process {c.pid}")
         waited = time.monotonic() - self._launched_at
         if clients:
             self.status.setText(f"● Game running ({clients} client{'s' if clients != 1 else ''})")
@@ -456,6 +465,8 @@ class PlayTab(QWidget):
                                         s.language, s.high_res)
             argv, env = runner.windows_command(s, exe, args, join=self._join)
             argv, env = runner.apply_game_options(s, argv, env)
+            if s.opt_gamemode and (gm := runner.gamemode_problem()):
+                self.ctx.log(f"GameMode warning: {gm}")
             self.ctx.log("Starting " + " ".join(gls.redact(argv, ticket, sub.name)))
             proc = runner.ManagedProcess("game", argv, env, game, self.ctx)
         except (gls.GLSError, runner.RunnerError, OSError) as e:

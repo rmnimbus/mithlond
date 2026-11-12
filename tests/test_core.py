@@ -546,7 +546,7 @@ class GameOptionTests(unittest.TestCase):
                 s = Settings(opt_gamescope=True, gamescope_args="-f -W 2560", opt_gamemode=True, opt_mangohud=True,
                              opt_dxvk_hud=True, opt_proton_wayland=True)
                 argv, env = runner.apply_game_options(s, ["umu-run", "game.exe"], {})
-                self.assertEqual(argv, [f"{d}/gamemoderun", f"{d}/gamescope", "-f", "-W", "2560", "--",
+                self.assertEqual(argv, [f"{d}/gamescope", "-f", "-W", "2560", "--", f"{d}/gamemoderun",
                                         "umu-run", "game.exe"])
                 self.assertEqual((env["MANGOHUD"], env["DXVK_HUD"], env["PROTON_ENABLE_WAYLAND"]), ("1", "fps", "1"))
                 self.assertEqual(runner.apply_game_options(Settings(), ["x"], {}), (["x"], {}))
@@ -558,6 +558,24 @@ class GameOptionTests(unittest.TestCase):
                     runner.apply_game_options(Settings(opt_gamescope=True), ["x"], {})
             finally:
                 os.environ["PATH"] = old
+
+
+class GameModeTests(unittest.TestCase):
+    def test_group_check(self):
+        import grp
+        import pwd
+        from mithlond import runner
+        me = pwd.getpwuid(os.getuid())
+        orig = grp.getgrnam
+        try:
+            grp.getgrnam = lambda n: (_ for _ in ()).throw(KeyError(n))
+            self.assertIn("doesn't exist", runner.gamemode_problem())
+            grp.getgrnam = lambda n: grp.struct_group(("gamemode", "x", 949, []))
+            self.assertIn("not in the 'gamemode' group", runner.gamemode_problem())
+            grp.getgrnam = lambda n: grp.struct_group(("gamemode", "x", 949, [me.pw_name]))
+            self.assertIsNone(runner.gamemode_problem())
+        finally:
+            grp.getgrnam = orig
 
 
 class ToolTests(unittest.TestCase):

@@ -44,6 +44,16 @@ from Mithlond.
 ### "gamescope / mangohud / gamemoderun is not installed"
 Install the program with your package manager, or untick the option in **Settings → Runners and Prefix**.
 
+### GameMode is ticked but nothing changes (the CPU stays on "powersave")
+GameMode needs polkit permission to switch the CPU governor, and its rule only allows the `gamemode` group.
+Some distributions (Artix and other non-systemd ones) never create that group, and Settings shows a red warning
+when that's the case. Fix: `sudo groupadd -r gamemode && sudo usermod -aG gamemode $USER`. While the game runs,
+`cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor` should then say `performance`.
+
+### "Native Wayland (Proton)" still shows an XWayland window
+Proton gets the setting and turns on its Wayland driver, but some Proton builds keep a game on XWayland as a
+fallback. LOTRO did with GE-Proton 11-6. The game runs normally either way.
+
 ### The password isn't remembered
 This needs `secret-tool` and a running Secret Service keyring: KWallet (`ksecretd`), GNOME Keyring or
 KeePassXC with Secret Service enabled. The line under the password box shows the reason if saving failed.

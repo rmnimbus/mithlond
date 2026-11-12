@@ -62,12 +62,45 @@ GAME_OPTIONS = [
     ("opt_gamescope", "Run in gamescope", "Valve's micro-compositor: fixes fullscreen/scaling issues, enables FSR.\n"
      "Arguments are set next to this box (default -f = fullscreen).", "gamescope"),
     ("opt_mangohud", "MangoHud overlay", "FPS, frame time, CPU/GPU load overlay (MANGOHUD=1).", "mangohud"),
-    ("opt_gamemode", "Feral GameMode", "Asks the system for performance mode while playing (gamemoderun).", "gamemoderun"),
+    ("opt_gamemode", "Feral GameMode", "Asks the system for performance mode while playing (gamemoderun).\n"
+     "Needs your user in the 'gamemode' group to have any effect.", "gamemoderun"),
     ("opt_dxvk_hud", "DXVK FPS counter", "Small FPS counter from DXVK (DXVK_HUD=fps).", None),
-    ("opt_proton_wayland", "Native Wayland (Proton)", "PROTON_ENABLE_WAYLAND=1: no XWayland; newer Protons only.", None),
+    ("opt_proton_wayland", "Native Wayland (Proton)", "PROTON_ENABLE_WAYLAND=1 asks Proton for its Wayland driver.\n"
+     "Newer Protons only, and Proton may still keep a game on XWayland (LOTRO did with GE-Proton 11-6).", None),
     ("opt_proton_log", "Proton debug log", "PROTON_LOG=1: writes steam-<id>.log to your home folder for troubleshooting.",
      None),
 ]
+
+
+def gamemode_problem() -> str | None:
+    """GameMode needs polkit permission to change CPU settings; its rule only allows the 'gamemode' group.
+    Distributions without systemd-sysusers (Artix, …) don't create that group, and then GameMode silently
+    does nothing."""
+    import grp
+    import pwd
+    try:
+        g = grp.getgrnam("gamemode")
+    except KeyError:
+        return ("the 'gamemode' group doesn't exist, so GameMode can't change CPU settings. Fix: "
+                "sudo groupadd -r gamemode && sudo usermod -aG gamemode $USER")
+    user = pwd.getpwuid(os.getuid())
+    if user.pw_name not in g.gr_mem and user.pw_gid != g.gr_gid:
+        return ("you're not in the 'gamemode' group, so GameMode can't change CPU settings. Fix: "
+                "sudo usermod -aG gamemode $USER")
+    return None
+
+
+def gamemode_register(pid: int) -> bool:
+    """Register a running process with GameMode (used when gamescope keeps gamemoderun's preload from
+    reaching the game)."""
+    exe = shutil.which("gamemoded")
+    if not exe:
+        return False
+    try:
+        r = subprocess.run([exe, f"-r{pid}"], env=host_env(), capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return r.returncode == 0
 
 
 def apply_game_options(s: Settings, argv: list[str], env: dict[str, str]) -> tuple[list[str], dict[str, str]]:
@@ -83,11 +116,13 @@ def apply_game_options(s: Settings, argv: list[str], env: dict[str, str]) -> tup
         env.setdefault("PROTON_LOG", "1")
     if s.opt_mangohud:
         env["MANGOHUD"] = "1"
+    # gamescope goes outermost: it drops LD_PRELOAD for its children, so gamemoderun has to sit inside it
+    # (gamescope -- gamemoderun <game>) for GameMode's library to reach the game.
     wrap: list[str] = []
-    if s.opt_gamemode:
-        wrap.append(shutil.which("gamemoderun") or "gamemoderun")
     if s.opt_gamescope:
         wrap += [shutil.which("gamescope") or "gamescope", *shlex.split(s.gamescope_args or ""), "--"]
+    if s.opt_gamemode:
+        wrap.append(shutil.which("gamemoderun") or "gamemoderun")
     return wrap + argv, env
 
 

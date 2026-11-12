@@ -28,9 +28,9 @@ Mithlond looks for a LOTRO install and documents folder. If it finds nothing, it
   |---|---|
   | Run in gamescope | Wraps the game in `gamescope <arguments> --`. The default argument `-f` means fullscreen. |
   | MangoHud overlay | Sets `MANGOHUD=1`. |
-  | Feral GameMode | Wraps the game in `gamemoderun`. |
+  | Feral GameMode | Wraps the game in `gamemoderun`. With gamescope, Mithlond also registers the game process with GameMode. Your user must be in the `gamemode` group (Settings warns if not). |
   | DXVK FPS counter | Sets `DXVK_HUD=fps`. |
-  | Native Wayland (Proton) | Sets `PROTON_ENABLE_WAYLAND=1`. |
+  | Native Wayland (Proton) | Sets `PROTON_ENABLE_WAYLAND=1`. Some Proton builds still keep the game on XWayland. |
   | Proton debug log | Sets `PROTON_LOG=1`. The log goes to `~/steam-*.log`. |
 
 ### Game
