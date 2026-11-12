@@ -43,12 +43,6 @@ Mithlond looks for a LOTRO install and documents folder. If it finds nothing, it
 You can pick the 64- or 32-bit client, the game language (from the installed `client_local_*.dat` files),
 high-resolution textures, and whether the launcher minimizes when the game starts.
 
-**Skip the intro videos** (on by default) skips the Turbine logo video that plays at every start and the
-one-time intro cinematic. The game has no setting for the logo video, so Mithlond renames
-`raw/<language>/logo/turbine_logo.bik` to `turbine_logo.bik.mithlond-skipped` before each start (a game patch
-may bring it back; the next start sets it aside again). The cinematic is marked as seen with
-`[Misc] PlayedIntroMovie=True` in the documents folder's `UserPreferences.ini`. Unticking the option puts the
-logo video back at the next start.
 
 ## Play
 
@@ -59,6 +53,12 @@ logo video back at the next start.
   - **Frame rate:** caps the frames per second (less heat, fan noise and power use). It sets `DXVK_FRAME_RATE`,
     which DXVK (Wine/Proton's DirectX layer) applies. "No limit" turns it off. An `DXVK_FRAME_RATE` in your own
     environment variables takes precedence.
+  - **Skip intro** (on by default): skips the Turbine logo video that plays at every start and the one-time
+    intro cinematic. The game has no setting for the logo video, so Mithlond renames
+    `raw/<language>/logo/turbine_logo.bik` to `turbine_logo.bik.mithlond-skipped` before each start (a game
+    patch may bring it back; the next start sets it aside again). The cinematic is marked as seen with
+    `[Misc] PlayedIntroMovie=True` in the documents folder's `UserPreferences.ini`. Unticking it puts the logo
+    video back at the next start.
   - **Voice chat off:** starts the client without its voice chat system (`--voiceoff`).
   - **Safe mode:** for the next start only (`--safe`). The game resets its graphics settings to safe values and
     **keeps them** (tested: 1024×768 windowed, DirectX 9, medium detail). Use it when the game crashes or shows a
@@ -89,6 +89,9 @@ Performance. Settings the game writes that Mithlond doesn't know yet appear unde
 out. Hidden on purpose: your account's world history, the official launcher's own entries, voice device IDs, and
 values the game measures itself.
 
+- **Search:** type in the box above the settings and the list narrows as you type, across all categories. Every
+  word must match the setting's name, its name in the file (e.g. `MasterVolume`), its category or its description.
+  The category list on the left shows how many settings match and jumps to that category.
 - Values are shown with readable names (e.g. "Very High"), but saved exactly as the game writes them. The setting
   names and allowed values come from the game client itself. Hover over a setting to see its name in the file.
 - Changed settings are shown in **bold** until you **Save changes**. Only those lines are written; everything

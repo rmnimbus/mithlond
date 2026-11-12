@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.6
+
+- **Game settings search:** a search box narrows the settings live as you type, across all categories (by name,
+  name in the file, category or description). The settings are now one scrolling page with a box per category;
+  the list on the left jumps to a category and shows how many settings match.
+- **Skip intro** moved to the Play tab's options (it was in Settings → Game).
+
 ## 1.4.5
 
 - **New Game settings tab:** the game's own options, about 130 of them, in categories (Display, Detail, Lighting &

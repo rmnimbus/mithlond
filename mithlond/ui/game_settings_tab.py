@@ -7,8 +7,8 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget, QMessageBox,
-    QPushButton, QScrollArea, QSlider, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget,
+    QMessageBox, QPushButton, QScrollArea, QSlider, QSpinBox, QVBoxLayout, QWidget,
 )
 
 from .. import gameprefs, procs
@@ -132,14 +132,26 @@ class GameSettingsTab(QWidget):
         buttons.addWidget(self.reload_btn)
         buttons.addWidget(self.open_btn)
 
-        # categories on the left, the selected category's settings on the right
+        # live search over every category; categories on the left jump to their box on the right
+        self.search = QLineEdit()
+        self.search.setPlaceholderText("Search settings, e.g. shadow, volume, scale, fps…")
+        self.search.setClearButtonEnabled(True)
+        self.search.textChanged.connect(self._filter)
+        self.no_match = QLabel("No setting matches your search.")
+        self.no_match.setVisible(False)
         self.nav = QListWidget()
         self.nav.setMaximumWidth(220)
-        self.pages = QStackedWidget()
-        self.nav.currentRowChanged.connect(self.pages.setCurrentIndex)
+        self.nav.itemClicked.connect(self._jump)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.groups: dict[str, tuple[QGroupBox, QFormLayout, list[Field]]] = {}
+        right = QVBoxLayout()
+        right.addWidget(self.search)
+        right.addWidget(self.no_match)
+        right.addWidget(self.scroll, 1)
         body = QHBoxLayout()
         body.addWidget(self.nav)
-        body.addWidget(self.pages, 1)
+        body.addLayout(right, 1)
         lay = QVBoxLayout(self)
         lay.addWidget(self.where)
         lay.addWidget(self.state)
@@ -161,12 +173,11 @@ class GameSettingsTab(QWidget):
     # ---- loading -------------------------------------------------------------------------
     def load(self) -> None:
         self.path = prefs_file(self.ctx.settings)
-        keep = self.nav.currentItem().text().split(" (")[0] if self.nav.currentItem() else ""
         self.nav.clear()
-        while self.pages.count():
-            w = self.pages.widget(0)
-            self.pages.removeWidget(w)
-            w.deleteLater()
+        self.groups = {}
+        old = self.scroll.takeWidget()
+        if old is not None:
+            old.deleteLater()
         self.fields = []
         if not self.path or not self.path.is_file():
             self.where.setText("No game settings file yet. The game creates <b>UserPreferences.ini</b> in the "
@@ -179,26 +190,60 @@ class GameSettingsTab(QWidget):
         by_cat: dict[str, list[gameprefs.Pref]] = {}
         for p in gameprefs.visible(values):
             by_cat.setdefault(p.category, []).append(p)
+        page = QWidget()
+        col = QVBoxLayout(page)
         for cat in gameprefs.CATEGORIES:
             prefs = by_cat.get(cat)
             if not prefs:
                 continue
-            page = QWidget()
-            form = QFormLayout(page)
+            box = QGroupBox(cat.replace("&", "&&"))
+            form = QFormLayout(box)
             form.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+            fields = []
             for p in prefs:
                 f = Field(p, values[p.id], self._changed)
-                self.fields.append(f)
+                fields.append(f)
                 form.addRow(f.label, f.widget)
-            scroll = QScrollArea()
-            scroll.setWidgetResizable(True)
-            scroll.setWidget(page)
-            self.pages.addWidget(scroll)
-            self.nav.addItem(f"{cat} ({len(prefs)})")
-        names = [self.nav.item(i).text().split(" (")[0] for i in range(self.nav.count())]
-        self.nav.setCurrentRow(names.index(keep) if keep in names else 0)
+            self.fields += fields
+            self.groups[cat] = (box, form, fields)
+            col.addWidget(box)
+            self.nav.addItem(cat)
+        col.addStretch()
+        self.scroll.setWidget(page)
+        self._filter()
         self._check_game()
         self._timer.start()
+
+    # ---- search and navigation ----------------------------------------------------------
+    @staticmethod
+    def _haystack(f: Field) -> str:
+        p = f.pref
+        return " ".join((p.label, p.key, p.section, p.category, p.tip, gameprefs.pretty(p.key))).lower()
+
+    def _filter(self, *_):
+        """Show only settings whose name, file key, category or description contain every typed word."""
+        words = self.search.text().lower().split()
+        total = 0
+        for i in range(self.nav.count()):
+            item = self.nav.item(i)
+            cat = item.data(Qt.UserRole) or item.text()
+            item.setData(Qt.UserRole, cat)
+            box, form, fields = self.groups[cat]
+            shown = 0
+            for row, f in enumerate(fields):
+                hit = all(w in self._haystack(f) for w in words)
+                form.setRowVisible(row, hit)
+                shown += hit
+            box.setVisible(shown > 0)
+            item.setHidden(shown == 0)
+            item.setText(f"{cat} ({shown})")
+            total += shown
+        self.no_match.setVisible(bool(words) and total == 0)
+        self.scroll.verticalScrollBar().setValue(0)
+
+    def _jump(self, item) -> None:
+        box = self.groups[item.data(Qt.UserRole)][0]
+        self.scroll.verticalScrollBar().setValue(box.y())
 
     def showEvent(self, e):
         super().showEvent(e)

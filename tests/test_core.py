@@ -1002,7 +1002,21 @@ class GamePrefsTests(unittest.TestCase):
             tab = GameSettingsTab(AppContext(Settings(documents_dir=d)))
             titles = [tab.nav.item(i).text() for i in range(tab.nav.count())]
             self.assertEqual(titles, ["Display (4)", "Detail (1)", "Shadows (1)", "Sound (1)", "Other (2)"])
-            self.assertEqual(tab.pages.count(), 5)
+            self.assertEqual(len(tab.groups), 5)
+            # live search: every typed word must match the name, file key, category or description
+            visible = lambda: [tab.nav.item(i).text() for i in range(tab.nav.count()) if not tab.nav.item(i).isHidden()]
+            tab.search.setText("volume")
+            self.assertEqual(visible(), ["Sound (1)"])
+            self.assertTrue(tab.groups["Display"][0].isHidden())
+            tab.search.setText("screen mode")
+            self.assertEqual(visible(), ["Display (1)"])
+            tab.search.setText("MasterVolume")  # the name in the file works too
+            self.assertEqual(visible(), ["Sound (1)"])
+            tab.search.setText("zzz")
+            self.assertEqual(visible(), [])
+            self.assertFalse(tab.no_match.isHidden())
+            tab.search.clear()
+            self.assertEqual(len(visible()), 5)
             field = next(f for f in tab.fields if f.pref.id == "Display.ScreenMode")
             self.assertFalse(tab.save_btn.isEnabled())
             self.assertEqual(field.widget.currentText(), "Full screen")  # shown readable

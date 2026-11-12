@@ -83,6 +83,9 @@ class PlayTab(QWidget):
         self.fps.setSuffix(" FPS")
         self.fps.setToolTip("Caps the frame rate (less heat, fan noise and power use). Works with Wine/Proton's\n"
                             "DXVK (DirectX 11, the default); sets DXVK_FRAME_RATE.")
+        self.skip_intro = QCheckBox("Skip intro")
+        self.skip_intro.setToolTip("Skips the Turbine logo video that plays at every start (Mithlond sets the file\n"
+                                   "aside; unticking puts it back) and marks the intro cinematic as already seen.")
         self.voice_off = QCheckBox("Voice chat off")
         self.voice_off.setToolTip("Starts the game without its voice chat system (--voiceoff).")
         self.safe_mode = QCheckBox("Safe mode")
@@ -94,13 +97,20 @@ class PlayTab(QWidget):
         opts_row.addWidget(QLabel("Frame rate"))
         opts_row.addWidget(self.fps)
         opts_row.addSpacing(12)
-        opts_row.addWidget(self.voice_off)
-        opts_row.addWidget(self.safe_mode)
+        opts_row.addWidget(self.skip_intro)
         opts_row.addStretch()
+        opts_row2 = QHBoxLayout()
+        opts_row2.addWidget(self.voice_off)
+        opts_row2.addSpacing(12)
+        opts_row2.addWidget(self.safe_mode)
+        opts_row2.addStretch()
         form.addRow("Options", opts_row)
+        form.addRow("", opts_row2)
         s0 = self.ctx.settings
         self.fps.setValue(max(0, s0.fps_limit))
         self.voice_off.setChecked(s0.voice_off)
+        self.skip_intro.setChecked(s0.skip_intro)
+        self.skip_intro.toggled.connect(self._options_changed)
         self.fps.valueChanged.connect(self._options_changed)
         self.voice_off.toggled.connect(self._options_changed)
 
@@ -522,6 +532,7 @@ class PlayTab(QWidget):
     def _options_changed(self, *_):
         s = self.ctx.settings
         s.fps_limit, s.voice_off = self.fps.value(), self.voice_off.isChecked()
+        s.skip_intro = self.skip_intro.isChecked()
         self.ctx.save()
 
     def _failed(self, e: Exception) -> None:
