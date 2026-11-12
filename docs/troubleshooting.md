@@ -31,6 +31,17 @@ Mithlond 1.4.2 and older defaulted to system Wine, which many systems don't have
 uses Proton). Pick a Proton runner in **Settings → Runners and Prefix**. 1.4.3 and later switch to Proton
 automatically when Wine isn't installed, and bring their own umu-run.
 
+### The game closes a few seconds after starting (openSUSE, Fedora-style SELinux)
+With SELinux enforcing and the `selinuxuser_execmod` setting off (openSUSE's default), Wine/Proton can't make
+its code executable and the game exits right away. A Wine debug log shows `failed to set … protection on
+ntdll.dll … noexec filesystem?`. Mithlond warns about this in Settings and in the log. Fix:
+`sudo setsebool -P selinuxuser_execmod 1`.
+
+### The game waits at "Enable DirectX 11 Graphics?"
+That's the game's first-run prompt, shown when its documents folder has no settings yet. Mithlond 1.4.4 and
+later always pick a documents folder (`~/Documents/The Lord of the Rings Online` if none exists) and seed it with
+settings, so the prompt doesn't appear. Otherwise, answer it once, or set a documents folder in Settings.
+
 ### "umu-run was not found"
 Only happens when running Mithlond from source: the AppImage includes umu-run. Install umu-launcher
 (https://github.com/Open-Wine-Components/umu-launcher/releases), or use the AppImage.

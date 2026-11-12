@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QProgressBar, QPushButton, QSplitter, QStyle, QVBoxLayout, QWidget,
 )
 
-from .. import gls, keystore, procs, runner
+from .. import config, gls, keystore, procs, runner
 from ..config import Account, check_game_dir
 from .context import AppContext
 from .news_panel import NewsPanel
@@ -467,6 +467,8 @@ class PlayTab(QWidget):
             argv, env = runner.apply_game_options(s, argv, env)
             if s.opt_gamemode and (gm := runner.gamemode_problem()):
                 self.ctx.log(f"GameMode warning: {gm}")
+            if se := config.selinux_problem():
+                self.ctx.log(f"Warning: {se}")
             self.ctx.log("Starting " + " ".join(gls.redact(argv, ticket, sub.name)))
             proc = runner.ManagedProcess("game", argv, env, game, self.ctx)
         except (gls.GLSError, runner.RunnerError, OSError) as e:

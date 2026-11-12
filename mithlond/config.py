@@ -383,6 +383,24 @@ def umu_command() -> list[str]:
     return [found] if found else []
 
 
+SELINUX_FS = Path("/sys/fs/selinux")
+
+
+def selinux_problem(root: Path = SELINUX_FS) -> str | None:
+    """SELinux in enforcing mode with `selinuxuser_execmod` off (openSUSE's default) stops Wine/Proton from
+    making ntdll executable: the game exits within seconds with nothing but 'failed to set … protection on
+    ntdll.dll … noexec filesystem?' in a Wine debug log. Both files are readable by normal users."""
+    try:
+        enforcing = (root / "enforce").read_text().strip() == "1"
+        execmod = (root / "booleans/selinuxuser_execmod").read_text().split()[0] == "1"
+    except (OSError, IndexError):
+        return None
+    if enforcing and not execmod:
+        return ("SELinux blocks Wine/Proton on this system (selinuxuser_execmod is off), so the game closes right "
+                "after starting. Allow it with: sudo setsebool -P selinuxuser_execmod 1")
+    return None
+
+
 def wine_installed(s: Settings) -> bool:
     w = s.wine_binary or "wine"
     return bool(shutil.which(w) or (os.sep in w and Path(w).is_file()))
@@ -414,6 +432,11 @@ def autodetect(s: Settings) -> list[str]:
         if docs:
             s.documents_dir = str(docs[0])
             notes.append(f"Documents folder: {docs[0]}")
+        elif not s.documents_dir:
+            # Nothing found (first LOTRO on this computer): use the usual place. The game is started with
+            # --prefs there and gets seeded settings, so it doesn't stop at its first-run DirectX prompt.
+            s.documents_dir = str(HOME / "Documents" / DOCS_FOLDER_NAME)
+            notes.append(f"Documents folder (new): {s.documents_dir}")
     fresh = not CONFIG_FILE.exists()
     if s.runner not in ("wine", "umu"):  # e.g. the removed "onelauncher" mode
         s.runner = "umu"

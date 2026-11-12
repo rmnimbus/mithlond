@@ -321,6 +321,8 @@ class SettingsTab(QWidget):
             problem = config.proton_problem(Path(s.proton_path).expanduser())
         if umu and not problem and not config.umu_command():
             problem = "umu-run was not found (running from source: install umu-launcher)"
+        if not problem:
+            problem = config.selinux_problem()
         if not umu and not problem and not config.wine_installed(s):
             problem = f"Wine ('{s.wine_binary or 'wine'}') isn't installed. Pick a Proton runner instead"
         if problem:

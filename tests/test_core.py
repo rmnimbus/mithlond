@@ -911,6 +911,21 @@ class SettingsTests(unittest.TestCase):
         t = Settings.load()
         self.assertEqual((t.game_dir, t.extra_env, t.accounts[0].world), ("/g", {"A": "1"}, "Glamdring"))
 
+    def test_selinux_execmod(self):
+        from mithlond import config
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            self.assertIsNone(config.selinux_problem(root / "missing"))  # no SELinux
+            (root / "booleans").mkdir()
+            (root / "enforce").write_text("1")
+            (root / "booleans/selinuxuser_execmod").write_text("0 0")
+            self.assertIn("setsebool -P selinuxuser_execmod 1", config.selinux_problem(root))
+            (root / "booleans/selinuxuser_execmod").write_text("1 1")
+            self.assertIsNone(config.selinux_problem(root))
+            (root / "booleans/selinuxuser_execmod").write_text("0 0")
+            (root / "enforce").write_text("0")  # permissive: Wine works
+            self.assertIsNone(config.selinux_problem(root))
+
     def test_faugus_flatpak_without_wine(self):
         """A Faugus Flatpak user with no system Wine: Proton via the bundled umu, in Faugus's LOTRO prefix."""
         from mithlond import config
@@ -942,6 +957,8 @@ class SettingsTests(unittest.TestCase):
                 self.assertEqual((s.runner, s.wine_prefix), ("umu", str(pfx)))
                 self.assertEqual(s.proton_path, str(compat / "Proton-CachyOS Latest"))  # Faugus's choice
                 self.assertIn("Runner: Proton (Wine isn't installed)", notes)
+                # no LOTRO documents folder anywhere yet: the usual place, so --prefs + seeding apply
+                self.assertEqual(s.documents_dir, str(home / "Documents/The Lord of the Rings Online"))
                 # a deliberate "umu's default" choice in an existing config is left alone
                 s = Settings(runner="umu")
                 Settings().save()
