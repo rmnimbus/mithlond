@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.9
+
+- **New Visual effects tab**, with a category list and search like the other settings tabs:
+  - **vkBasalt:** AMD CAS and DLS sharpening, SMAA and FXAA antialiasing, color LUTs, ReShade shaders, a toggle key.
+  - **gamescope** (moved here from Settings): fullscreen/borderless, output resolution, render scale with FSR, NIS
+    or SGSR upscaling and sharpness, scaling mode, frame rates (also in the background), variable refresh rate,
+    HDR with inverse tone mapping, MangoHud through gamescope, keyboard grab, mouse lock, extra arguments, and a
+    preview of the command.
+  - **DXVK:** forced anisotropic filtering, texture LOD bias, max frame latency, VSync, tear-free presentation.
+- The **Game settings** tab is now called **In game settings**.
+
 ## 1.4.8
 
 - **Settings is categorized** like Game settings: a category list on the left (Locations, Runner & Prefix, Game

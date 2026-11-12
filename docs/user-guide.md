@@ -82,9 +82,35 @@ If another program is already running in the same Proton prefix, Mithlond asks b
 normally waits until those programs close, so the game wouldn't appear. You can close them, start alongside
 them, or cancel.
 
-## Game settings
+## Visual effects
 
-The game's own options, read from `UserPreferences.ini` in the documents folder the game is started with. They're
+Effects that work on the picture DXVK/Vulkan renders, outside the game itself. They apply the next time the game
+starts. Like the other settings tabs it has a category list and a search box.
+
+- **Sharpening & antialiasing (vkBasalt):** needs the `vkbasalt` package (on Arch-based systems it's in the AUR).
+  Tick **Use vkBasalt**, then choose effects: **AMD CAS** sharpening (the usual first choice), **DLS** sharpening,
+  **SMAA** or **FXAA** antialiasing, a color **LUT**, and **ReShade shaders** (a folder with `Shaders/` and
+  `Textures/`, plus the names of the `.fx` effects to run). Antialiasing runs before sharpening. The **Toggle key**
+  (default Home) switches the effects on and off in game. Mithlond writes `~/.config/mithlond/vkBasalt.conf` and
+  starts the game with `ENABLE_VKBASALT=1`; your own `~/.config/vkBasalt` is left alone.
+- **Upscaling & display (gamescope):** run the game in gamescope with fullscreen or borderless, an output
+  resolution, a **render scale** (Quality 67%, Balanced 59%, Performance 50%… or a custom size) with an
+  **upscaler** (AMD FSR 1, NVIDIA NIS, Snapdragon SGSR, or plain), upscaler sharpness, scaling mode, the game's
+  frame rate and a lower one in the background, variable refresh rate, HDR output with SDR→HDR inverse tone
+  mapping, MangoHud through gamescope, keyboard grab and mouse lock, and extra arguments. The **Command** line
+  shows the gamescope command it builds. LOTRO sizes its picture from its own resolution setting, so set
+  **In game settings → Display → Full-screen resolution** to the render size for the sharpest result.
+- **DXVK:** force anisotropic filtering (2×–16×), a texture LOD bias, the maximum frame latency (1 = least input
+  lag), vertical sync, and tear-free presentation. Mithlond writes `~/.config/mithlond/dxvk.conf` and passes it
+  with `DXVK_CONFIG_FILE`.
+
+Tested with real game starts: vkBasalt loaded into the game with Mithlond's config (SMAA + CAS); gamescope ran the
+game at a 1280x720 render size with FSR on a 1920x1080 output; DXVK found the config and applied 16x anisotropic
+filtering and a frame latency of 1.
+
+## In game settings
+
+The tab is called **In game settings**. It holds the game's own options, read from `UserPreferences.ini` in the documents folder the game is started with. They're
 grouped into Display, Detail, Lighting & Effects, Shadows, Sound, Interface, Controls & Camera, Voice Chat and
 Performance. Settings the game writes that Mithlond doesn't know yet appear under **Other**, so nothing is left
 out. Hidden on purpose: your account's world history, the official launcher's own entries, voice device IDs, and

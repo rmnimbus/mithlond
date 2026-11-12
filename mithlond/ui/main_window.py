@@ -15,6 +15,7 @@ from ..config import APP_NAME, check_game_dir
 from .addons_tab import AddonsTab
 from .companion_tab import CompanionTab
 from .context import AppContext
+from .effects_tab import VisualEffectsTab
 from .game_settings_tab import GameSettingsTab
 from .play_tab import PlayTab
 from .settings_tab import SettingsTab
@@ -35,12 +36,14 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.play = PlayTab(ctx)
         self.game_settings = GameSettingsTab(ctx)
+        self.effects = VisualEffectsTab(ctx)
         self.addons = AddonsTab(ctx)
         self.songs = SongsTab(ctx)
         self.companion = CompanionTab(ctx)
         self.settings = SettingsTab(ctx)
         self.tabs.addTab(self.play, "Play")
-        self.tabs.addTab(self.game_settings, "Game settings")
+        self.tabs.addTab(self.game_settings, "In game settings")
+        self.tabs.addTab(self.effects, "Visual effects")
         self.tabs.addTab(self.addons, "Downloads")
         self.tabs.addTab(self.songs, "Music")
         self.tabs.addTab(self.companion, "Companion")

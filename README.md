@@ -14,7 +14,8 @@ alongside the game.
 | Tab | What it does |
 |---|---|
 | **Play** | Logs in with the official login servers and shows each world's status. Waits in the login queue, then starts the game client through Wine or Proton (umu-run). The **STOP** button closes every game client and every helper program. The news panel shows the official lotro.com news, with this week's **coupon code** at the top. |
-| **Game settings** | The game's own options (graphics, display, sound, interface, controls, voice chat, performance) in categories, edited while the game is closed. Saves only what you change, with a backup. |
+| **In game settings** | The game's own options (graphics, display, sound, interface, controls, voice chat, performance) in categories, edited while the game is closed. Saves only what you change, with a backup. |
+| **Visual effects** | vkBasalt sharpening/antialiasing/ReShade shaders, gamescope upscaling (FSR, NIS) and display options, DXVK options (forced anisotropic filtering, frame latency, VSync). |
 | **Downloads** | Plugins, skins and music packs from [lotrointerface.com](https://www.lotrointerface.com/). Browse, search, install (dependencies included), update and uninstall. It works alongside LOTRO Plugin Compendium and picks up plugins you installed by hand. |
 | **Music** | Import `.abc` songs (files, folders, zips, drag and drop) and browse them by title and part count. Keeps the **Songbook** plugin's song list up to date. Downloads and starts **Maestro** and **WAN Songbook Filler**, and links to **BruTE**. |
 | **Companion** | Downloads, updates and starts **LotRO Companion**, and can open and close it along with the game. |

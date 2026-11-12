@@ -703,7 +703,7 @@ class GameOptionTests(unittest.TestCase):
             old = os.environ["PATH"]
             os.environ["PATH"] = f"{d}:{old}"
             try:
-                s = Settings(opt_gamescope=True, gamescope_args="-f -W 2560", opt_gamemode=True, opt_mangohud=True,
+                s = Settings(opt_gamescope=True, gamescope_args="-W 2560", opt_gamemode=True, opt_mangohud=True,
                              opt_dxvk_hud=True, opt_proton_wayland=True)
                 argv, env = runner.apply_game_options(s, ["umu-run", "game.exe"], {})
                 self.assertEqual(argv, [f"{d}/gamescope", "-f", "-W", "2560", "--", f"{d}/gamemoderun",
@@ -1035,6 +1035,94 @@ class GamePrefsTests(unittest.TestCase):
             tab._timer.stop()
             tab.deleteLater()  # destroy the widgets now, not during interpreter shutdown (segfault)
             app.processEvents()
+
+
+class EffectsTests(unittest.TestCase):
+    def test_gamescope_args(self):
+        from mithlond import effects
+        s = Settings()
+        self.assertEqual(effects.gamescope_args(s), ["-f"])  # defaults: fullscreen only
+        s.gs_render, s.gs_filter, s.gs_sharpness = "quality", "fsr", 3
+        self.assertEqual(effects.gamescope_args(s, (2560, 1440)),
+                         ["-W", "2560", "-H", "1440", "-w", "1706", "-h", "960", "-F", "fsr", "--sharpness", "3", "-f"])
+        s.gs_output_w, s.gs_output_h = 3840, 2160
+        s.gs_render = "performance"
+        self.assertEqual(effects.gamescope_args(s, (1920, 1080))[:8], ["-W", "3840", "-H", "2160", "-w", "1920", "-h", "1080"])
+        s = Settings(gs_render="custom", gs_render_w=1280, gs_render_h=720, gs_filter="nis", gs_scaler="fit",
+                     gs_refresh=60, gs_unfocused_refresh=15, gs_fullscreen=False, gs_borderless=True,
+                     gs_adaptive_sync=True, gs_hdr=True, gs_hdr_itm=True, gs_mangoapp=True, gs_grab_keyboard=True,
+                     gs_force_grab_cursor=True, gamescope_args="--rt")
+        self.assertEqual(effects.gamescope_args(s), [
+            "-w", "1280", "-h", "720", "-F", "nis", "--sharpness", "5", "-S", "fit", "-r", "60", "-o", "15", "-b",
+            "-g", "--force-grab-cursor", "--adaptive-sync", "--mangoapp", "--hdr-enabled", "--hdr-itm-enabled", "--rt"])
+        s.gs_hdr = False  # inverse tone mapping only with HDR output
+        self.assertNotIn("--hdr-itm-enabled", effects.gamescope_args(s))
+
+    def test_vkbasalt_and_dxvk_config(self):
+        from mithlond import effects
+        with tempfile.TemporaryDirectory() as d:
+            shaders = Path(d) / "Shaders"
+            shaders.mkdir()
+            (shaders / "Vibrance.fx").write_text("")
+            s = Settings(vkb_enabled=True, vkb_cas=True, vkb_smaa=True, vkb_cas_sharpness=0.6,
+                         vkb_reshade_dir=d, vkb_reshade_effects="Vibrance Missing")
+            self.assertEqual(effects.vkbasalt_effects(s), ["smaa", "cas", "Vibrance"])  # AA before sharpening
+            conf = effects.vkbasalt_config(s)
+            self.assertIn("effects = smaa:cas:Vibrance\n", conf)
+            self.assertIn("casSharpness = 0.60\n", conf)
+            self.assertIn(f'Vibrance = "{shaders / "Vibrance.fx"}"', conf)
+            self.assertIn(f'reshadeIncludePath = "{shaders}"', conf)
+        s = Settings()
+        self.assertEqual(effects.dxvk_options(s), {})
+        s = Settings(dxvk_aniso=16, dxvk_lod_bias=-0.5, dxvk_latency=1, dxvk_vsync="off", dxvk_tearfree="True")
+        o = effects.dxvk_options(s)
+        self.assertEqual((o["d3d11.samplerAnisotropy"], o["d3d9.samplerAnisotropy"], o["d3d11.samplerLodBias"],
+                          o["dxgi.maxFrameLatency"], o["dxgi.syncInterval"], o["d3d9.presentInterval"],
+                          o["dxvk.tearFree"]), ("16", "16", "-0.50", "1", "0", "0", "True"))
+
+    def test_apply_env(self):
+        from mithlond import effects
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.object(effects, "CONFIG_DIR", Path(d)), \
+                mock.patch.object(effects, "VKBASALT_CONF", Path(d) / "vkBasalt.conf"), \
+                mock.patch.object(effects, "DXVK_CONF", Path(d) / "dxvk.conf"):
+            env = {}
+            self.assertEqual(effects.apply_env(Settings(), env), [])
+            self.assertEqual(env, {})  # nothing set: nothing written
+            s = Settings(vkb_enabled=True, dxvk_aniso=16)
+            with mock.patch.object(effects, "vkbasalt_installed", lambda: False):
+                notes = effects.apply_env(s, env)
+            self.assertNotIn("ENABLE_VKBASALT", env)
+            self.assertIn("not installed", notes[0])
+            env = {}
+            with mock.patch.object(effects, "vkbasalt_installed", lambda: True):
+                effects.apply_env(s, env)
+            self.assertEqual((env["ENABLE_VKBASALT"], env["VKBASALT_CONFIG_FILE"], env["DXVK_CONFIG_FILE"]),
+                             ("1", f"{d}/vkBasalt.conf", f"{d}/dxvk.conf"))
+            self.assertIn("d3d11.samplerAnisotropy = 16", (Path(d) / "dxvk.conf").read_text())
+
+    def test_old_gamescope_f_migrates(self):
+        from mithlond import config
+        s = Settings(gamescope_args="-f")
+        config.autodetect(s)
+        self.assertEqual((s.gamescope_args, s.gs_fullscreen), ("", True))
+
+    def test_tab(self):
+        from PySide6.QtWidgets import QApplication
+        from mithlond.ui.context import AppContext
+        from mithlond.ui.effects_tab import VisualEffectsTab
+        app = QApplication.instance() or QApplication([])
+        ctx = AppContext(Settings())
+        tab = VisualEffectsTab(ctx)
+        nav = [tab.page.nav.item(i).text() for i in range(tab.page.nav.count())]
+        self.assertEqual(nav, ["Sharpening & antialiasing", "Upscaling & display", "DXVK"])
+        tab.page.search.setText("fsr")
+        self.assertEqual([tab.page.nav.item(i).text() for i in range(tab.page.nav.count())
+                          if not tab.page.nav.item(i).isHidden()], ["Upscaling & display"])
+        tab.page.search.clear()
+        self.assertIn("gamescope -f -- <game>", tab.gs_preview.text())
+        tab.deleteLater()
+        app.processEvents()
 
 
 class LayoutTests(unittest.TestCase):

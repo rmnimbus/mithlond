@@ -7,7 +7,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFileDialog, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+    QCheckBox, QComboBox, QFileDialog, QFormLayout, QGridLayout, QGroupBox, QHBoxLayout, QLabel,
     QMessageBox, QPlainTextEdit,
     QPushButton, QVBoxLayout, QWidget,
 )
@@ -102,7 +102,8 @@ class SettingsTab(QWidget):
         run.addRow("Environment\nvariables", self.env)
         self.opts: dict[str, QCheckBox] = {}
         grid = QGridLayout()
-        for i, (key, label, tip, needs) in enumerate(runner.GAME_OPTIONS):
+        game_opts = [o for o in runner.GAME_OPTIONS if o[0] != "opt_gamescope"]  # gamescope: Visual effects tab
+        for i, (key, label, tip, needs) in enumerate(game_opts):
             cb = QCheckBox(label)
             cb.setToolTip(tip)
             if needs and not shutil.which(needs):
@@ -110,9 +111,6 @@ class SettingsTab(QWidget):
                 cb.setEnabled(bool(getattr(self.ctx.settings, key)))  # still allow unticking
             self.opts[key] = cb
             grid.addWidget(cb, i // 2, i % 2)
-        self.gamescope_args = QLineEdit()
-        self.gamescope_args.setPlaceholderText("gamescope arguments, e.g. -f -W 2560 -H 1440")
-        self.gamescope_args.setToolTip("Arguments passed to gamescope before '--'")
         opt = QFormLayout()
         opt.addRow("", subtle("Apply to the game client only. Each needs the program installed on your system."))
         opt.addRow("Options", grid)
@@ -121,7 +119,7 @@ class SettingsTab(QWidget):
         self.opt_warning.setWordWrap(True)
         self.opt_warning.setTextInteractionFlags(Qt.TextSelectableByMouse)
         opt.addRow("", self.opt_warning)
-        opt.addRow("gamescope arguments", self.gamescope_args)
+        opt.addRow("", subtle("gamescope (upscaling, resolution, HDR…) is on the Visual effects tab."))
         run_box = QGroupBox("Runner && Prefix")  # && = a literal & in Qt titles
         run_box.setLayout(run)
         opt_box = QGroupBox("Game options")
@@ -192,7 +190,6 @@ class SettingsTab(QWidget):
             w.toggled.connect(self.save)
         for cb in self.opts.values():
             cb.toggled.connect(self.save)
-        self.gamescope_args.editingFinished.connect(self.save)
         for w in (self.client, self.language, self.on_start):
             w.currentIndexChanged.connect(self.save)
         self.runner.activated.connect(self._runner_picked)
@@ -239,7 +236,6 @@ class SettingsTab(QWidget):
         self.on_start.setCurrentIndex(max(self.on_start.findData(s.on_game_start), 0))
         for key, cb in self.opts.items():
             cb.setChecked(bool(getattr(s, key)))
-        self.gamescope_args.setText(s.gamescope_args)
         self._runner_fields()
         self._loading = False
 
@@ -368,7 +364,6 @@ class SettingsTab(QWidget):
         s.on_game_start = self.on_start.currentData()
         for key, cb in self.opts.items():
             setattr(s, key, cb.isChecked())
-        s.gamescope_args = self.gamescope_args.text().strip()
         if game_changed:
             self._fill_languages()
             s.language = self.language.currentText()

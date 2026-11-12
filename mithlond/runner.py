@@ -4,7 +4,6 @@ and native programs (Companion on system Java, Maestro/BruTE jars)."""
 from __future__ import annotations
 
 import os
-import shlex
 import shutil
 import signal
 import subprocess
@@ -219,11 +218,18 @@ def client_option_args(s: Settings, safe: bool = False) -> list[str]:
     return (["--voiceoff"] if s.voice_off else []) + (["--safe"] if safe else [])
 
 
-def apply_game_options(s: Settings, argv: list[str], env: dict[str, str]) -> tuple[list[str], dict[str, str]]:
-    """Add the ticked game options (env variables and wrapper programs) to a game client command."""
+effect_notes: list[str] = []  # what apply_game_options set up from the Visual effects tab (for the log)
+
+
+def apply_game_options(s: Settings, argv: list[str], env: dict[str, str],
+                       screen: tuple[int, int] | None = None) -> tuple[list[str], dict[str, str]]:
+    """Add the ticked game options and visual effects (env variables, config files, wrapper programs) to a game
+    client command. `screen` is the monitor size, for gamescope's render scale."""
+    from . import effects
     for key, label, _tip, needs in GAME_OPTIONS:
         if getattr(s, key) and needs and not shutil.which(needs):
-            raise RunnerError(f"'{label}' is ticked in Settings, but {needs} is not installed.")
+            where = "Visual effects" if key == "opt_gamescope" else "Settings"
+            raise RunnerError(f"'{label}' is ticked in {where}, but {needs} is not installed.")
     if s.opt_dxvk_hud:
         env.setdefault("DXVK_HUD", "fps")
     if s.opt_proton_wayland:
@@ -234,11 +240,13 @@ def apply_game_options(s: Settings, argv: list[str], env: dict[str, str]) -> tup
         env["MANGOHUD"] = "1"
     if s.fps_limit > 0:
         env.setdefault("DXVK_FRAME_RATE", str(s.fps_limit))
+    global effect_notes
+    effect_notes = effects.apply_env(s, env)  # vkBasalt, dxvk.conf
     # gamescope goes outermost: it drops LD_PRELOAD for its children, so gamemoderun has to sit inside it
     # (gamescope -- gamemoderun <game>) for GameMode's library to reach the game.
     wrap: list[str] = []
     if s.opt_gamescope:
-        wrap += [shutil.which("gamescope") or "gamescope", *shlex.split(s.gamescope_args or ""), "--"]
+        wrap += effects.gamescope_command(s, screen)
     if s.opt_gamemode:
         wrap.append(shutil.which("gamemoderun") or "gamemoderun")
     return wrap + argv, env

@@ -510,7 +510,11 @@ class PlayTab(QWidget):
             for note in runner.apply_intro_skip(s):  # after prefs_args, which may have just seeded the settings
                 self.ctx.log(f"Intro videos: {note}")
             argv, env = runner.windows_command(s, exe, args, join=self._join)
-            argv, env = runner.apply_game_options(s, argv, env)
+            scr = self.screen()
+            size = scr.size() * scr.devicePixelRatio() if scr else None
+            argv, env = runner.apply_game_options(s, argv, env, (size.width(), size.height()) if size else None)
+            for note in runner.effect_notes:
+                self.ctx.log(f"Visual effects: {note}")
             if s.opt_gamemode and (gm := runner.gamemode_problem()):
                 self.ctx.log(f"GameMode warning: {gm}")
             if se := config.selinux_problem():

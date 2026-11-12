@@ -44,7 +44,55 @@ class Settings:
     extra_env: dict[str, str] = field(default_factory=dict)
     # Common game options (game client only)
     opt_gamescope: bool = False
-    gamescope_args: str = "-f"
+    # Visual effects tab: gamescope (upscaling and display), see effects.gamescope_args
+    gs_fullscreen: bool = True
+    gs_borderless: bool = False
+    gs_output_w: int = 0  # 0 = the monitor's size
+    gs_output_h: int = 0
+    gs_render: str = "native"  # effects.RENDER_SCALES key
+    gs_render_w: int = 0
+    gs_render_h: int = 0
+    gs_filter: str = "linear"
+    gs_sharpness: int = 5  # 0 = sharpest … 20 = softest (FSR/NIS/SGSR)
+    gs_scaler: str = "auto"
+    gs_refresh: int = 0  # game frame rate inside gamescope (-r), 0 = default
+    gs_unfocused_refresh: int = 0  # frame rate while not focused (-o)
+    gs_adaptive_sync: bool = False
+    gs_mangoapp: bool = False
+    gs_hdr: bool = False
+    gs_hdr_itm: bool = False
+    gs_grab_keyboard: bool = False
+    gs_force_grab_cursor: bool = False
+    # vkBasalt
+    vkb_enabled: bool = False
+    vkb_on_launch: bool = True
+    vkb_toggle_key: str = "Home"
+    vkb_cas: bool = True
+    vkb_cas_sharpness: float = 0.4
+    vkb_dls: bool = False
+    vkb_dls_sharpness: float = 0.5
+    vkb_dls_denoise: float = 0.17
+    vkb_fxaa: bool = False
+    vkb_fxaa_subpix: float = 0.75
+    vkb_fxaa_edge: float = 0.125
+    vkb_fxaa_edge_min: float = 0.0312
+    vkb_smaa: bool = False
+    vkb_smaa_edge: str = "luma"
+    vkb_smaa_threshold: float = 0.05
+    vkb_smaa_steps: int = 32
+    vkb_smaa_steps_diag: int = 16
+    vkb_smaa_corner: int = 25
+    vkb_lut: bool = False
+    vkb_lut_file: str = ""
+    vkb_reshade_dir: str = ""  # contains Shaders/ and Textures/
+    vkb_reshade_effects: str = ""  # .fx names from Shaders/, space separated
+    # DXVK (dxvk.conf)
+    dxvk_aniso: int = 0  # 0 = the game's setting
+    dxvk_lod_bias: float = 0.0
+    dxvk_latency: int = 0  # 0 = DXVK's default
+    dxvk_vsync: str = "game"  # game | on | off
+    dxvk_tearfree: str = "Auto"  # Auto | True | False
+    gamescope_args: str = ""  # extra gamescope arguments (Visual effects tab)
     opt_mangohud: bool = False
     opt_gamemode: bool = False
     opt_dxvk_hud: bool = False
@@ -441,6 +489,8 @@ def autodetect(s: Settings) -> list[str]:
             s.documents_dir = str(HOME / "Documents" / DOCS_FOLDER_NAME)
             notes.append(f"Documents folder (new): {s.documents_dir}")
     fresh = not CONFIG_FILE.exists()
+    if s.gamescope_args.strip() == "-f":  # before 1.4.9 fullscreen was this argument; now it's gs_fullscreen
+        s.gamescope_args = ""
     if s.runner not in ("wine", "umu"):  # e.g. the removed "onelauncher" mode
         s.runner = "umu"
     if s.runner == "wine" and not wine_installed(s) and umu_command():
