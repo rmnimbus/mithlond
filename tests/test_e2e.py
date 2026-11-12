@@ -136,7 +136,7 @@ class EndToEnd(unittest.TestCase):
 
         s = Settings(game_dir=str(game), documents_dir=str(docs), wine_binary=str(fake_wine),
                      wine_prefix=str(root / "pfx"), companion_dir=str(comp), companion_delay=2,
-                     companion_with_game=True)
+                     companion_with_game=True, check_updates_on_start=False)
         s.save()
         keystore.available = lambda: False  # never touch the real keyring in tests
         news.fetch = lambda url: (news.parse_feed((DATA / "launcher-feed.xml").read_bytes()), False)

@@ -20,6 +20,7 @@ mithlond/
   news.py         lotro.com launcher feed, HTML sanitizer, weekly coupon extraction
   companion.py    LotRO Companion: version, SourceForge releases, update/install, direct launch
   tools.py        Maestro / BruTE / WAN Songbook Filler: latest release info, download
+  selfupdate.py   Mithlond's own updates from GitHub releases (rmnimbus/mithlond): check, download, verify, replace
   keystore.py     password storage through secret-tool
   hostenv.py      environment isolation when running from the AppImage
   ui/             one module per tab, plus theme, workers (thread pool) and shared context
@@ -63,3 +64,10 @@ password reaches the log or config.
 
 The result is about 45 MB. Inside the AppImage, programs that Mithlond starts (wine, umu-run, java,
 secret-tool…) get the user's original environment (`hostenv.py`).
+
+## Releasing
+
+1. Bump `mithlond/__init__.py`, add a CHANGELOG entry, and commit.
+2. Tag `vX.Y.Z` and push to Gitea. Gitea's push mirror copies the commit and tag to GitHub.
+3. Build with `packaging/build-appimage.sh` and create the release with `Mithlond-X.Y.Z-x86_64.AppImage`
+   attached, on Gitea and on **GitHub**. The updater reads GitHub's "latest release" and its asset's `digest`.

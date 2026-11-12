@@ -115,6 +115,18 @@ The note under each tool shows the latest release and how old it is.
 - Companion keeps its data (accounts, characters) in `C:\users\<user>\.lotrocompanion` inside the prefix, or in
   `~/.lotrocompanion` in native mode.
 
+## Updates
+
+Mithlond checks GitHub for a newer release a couple of seconds after it starts. If there is one, a banner above
+the tabs offers **Update now**, **What's new** (the release notes) and **Skip this version**. You can turn the
+startup check off, or check by hand, in **Settings → About & updates**.
+
+**Update now** downloads the new AppImage into the same folder as the one you're running and checks it: size,
+AppImage header and GitHub's SHA-256 checksum. If anything doesn't match, nothing is changed. Otherwise it's made
+executable, the old AppImage is removed, and Mithlond offers to restart into the new version. Your settings are
+kept, because they live in `~/.config/mithlond`, not in the AppImage. The new file is named after its version
+(e.g. `Mithlond-1.4.0-x86_64.AppImage`), so update any menu shortcut that points at the old name.
+
 ## Files
 
 | What | Where |

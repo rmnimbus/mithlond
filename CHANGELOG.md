@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- **Mithlond updates itself.** At startup it checks GitHub for a newer release (can be turned off), and a banner
+  offers **Update now**, **What's new** and **Skip this version**. **Settings → About & updates** has the current
+  version and a **Check for updates** button. Updating downloads the new AppImage next to the current one,
+  verifies its size, AppImage header and GitHub's SHA-256 checksum, makes it executable, replaces the old file
+  and offers to restart. Running from source, it opens the release page instead.
+
 ## 1.3.0
 
 - **The game always uses your chosen documents folder.** Mithlond starts the client with

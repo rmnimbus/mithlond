@@ -146,9 +146,30 @@ class SettingsTab(QWidget):
         game_box = QGroupBox("Game")
         game_box.setLayout(gf)
 
+        # --- about & updates
+        from .. import __version__, selfupdate
+        self.update_check_btn = QPushButton("Check for updates")
+        self.update_auto = QCheckBox("Check for updates when Mithlond starts")
+        self.update_status = QLabel()
+        self.update_status.setWordWrap(True)
+        ok, why = selfupdate.can_self_update()
+        how = ("Updates are downloaded from GitHub and replace this AppImage." if ok else
+               f"{why} Updates open the download page instead.")
+        ab = QFormLayout()
+        vrow = QHBoxLayout()
+        vrow.addWidget(QLabel(f"<b>Mithlond {__version__}</b>"))
+        vrow.addStretch()
+        vrow.addWidget(self.update_check_btn)
+        ab.addRow("Version", vrow)
+        ab.addRow("", self.update_auto)
+        ab.addRow("", self.update_status)
+        ab.addRow("", subtle(f"{how} Releases: {selfupdate.RELEASES_PAGE.rsplit('/latest', 1)[0]}"))
+        about_box = QGroupBox("About & updates")
+        about_box.setLayout(ab)
+
         inner = QWidget()
         lay = QVBoxLayout(inner)
-        for b in (loc_box, run_box, game_box):
+        for b in (loc_box, run_box, game_box, about_box):
             lay.addWidget(b)
         lay.addStretch()
         scroll = QScrollArea()
@@ -178,6 +199,7 @@ class SettingsTab(QWidget):
         self.game_detect.clicked.connect(self.detect_game)
         self.docs_choose.clicked.connect(self.choose_docs)
         self.use_prefs.toggled.connect(self.save)
+        self.update_auto.toggled.connect(self.save)
 
     def _check_downloads(self, p: Path) -> tuple[bool, str]:
         if str(p) in ("", "."):
@@ -202,6 +224,7 @@ class SettingsTab(QWidget):
         self.docs.set_text(s.documents_dir)
         self.downloads.set_text(s.downloads_dir)
         self.use_prefs.setChecked(s.use_prefs)
+        self.update_auto.setChecked(s.check_updates_on_start)
         self._fill_runners()
         self._fill_prefixes()
         self.umu.set_text(s.umu_run)
@@ -325,6 +348,7 @@ class SettingsTab(QWidget):
         s.documents_dir = self.docs.text()
         s.downloads_dir = self.downloads.text()
         s.use_prefs = self.use_prefs.isChecked()
+        s.check_updates_on_start = self.update_auto.isChecked()
         self.downloads.validate()
         s.wine_prefix = self.prefix.currentText().strip()
         s.umu_run = self.umu.text()
@@ -355,3 +379,7 @@ class SettingsTab(QWidget):
         dlg = DocsChooser(self.ctx.settings, self)
         if dlg.exec() and dlg.chosen:
             self.docs.set_text(str(dlg.chosen), emit=True)
+
+    def attach_updater(self, updater) -> None:
+        self.update_check_btn.clicked.connect(lambda: updater.check(manual=True))
+        updater.status.connect(self.update_status.setText)

@@ -719,6 +719,100 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(sorted(skins), ["77"])
 
 
+class SelfUpdateTests(unittest.TestCase):
+    def _serve(self, payload: bytes):
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        class H(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.shutdown)
+        return f"http://127.0.0.1:{srv.server_port}/Mithlond-9.9.9-x86_64.AppImage"
+
+    def _release(self, url, payload, sha=None):
+        import hashlib
+        from mithlond import selfupdate
+        return selfupdate.Release("9.9.9", "v9.9.9", "notes", "https://example/rel", "Mithlond-9.9.9-x86_64.AppImage",
+                                  url, len(payload), sha if sha is not None else hashlib.sha256(payload).hexdigest())
+
+    def test_parse_and_compare(self):
+        from mithlond import selfupdate
+        data = {"tag_name": "v1.4.0", "body": "**new**", "html_url": "https://github.com/x/releases/tag/v1.4.0",
+                "assets": [{"name": "Mithlond-1.4.0-aarch64.AppImage", "browser_download_url": "a", "size": 1},
+                           {"name": f"Mithlond-1.4.0-{selfupdate.arch()}.AppImage", "browser_download_url": "u",
+                            "size": 42, "digest": "sha256:abc"}]}
+        r = selfupdate.parse_release(data)
+        self.assertEqual((r.version, r.asset_url, r.asset_size, r.sha256), ("1.4.0", "u", 42, "abc"))
+        self.assertTrue(selfupdate.is_newer("1.4.0", "1.3.0"))
+        self.assertTrue(selfupdate.is_newer("1.10.0", "1.9.9"))
+        self.assertFalse(selfupdate.is_newer("1.3.0", "1.3.0"))
+        self.assertFalse(selfupdate.is_newer("1.2.9", "1.3.0"))
+        self.assertIsNone(selfupdate.parse_release({"tag_name": "v2", "assets": []}).asset_url)
+
+    def test_update_replaces_appimage(self):
+        from mithlond import selfupdate
+        payload = b"\x7fELF" + b"\x02\x01\x01\x00" + b"AI\x02" + b"x" * 5000
+        url = self._serve(payload)
+        with tempfile.TemporaryDirectory() as d:
+            cur = Path(d) / "Mithlond-1.3.0-x86_64.AppImage"
+            cur.write_bytes(b"old")
+            new = selfupdate.update(self._release(url, payload), current=cur)
+            self.assertEqual(new, Path(d) / "Mithlond-9.9.9-x86_64.AppImage")
+            self.assertEqual(new.read_bytes(), payload)
+            self.assertTrue(os.access(new, os.X_OK))
+            self.assertFalse(cur.exists())
+            self.assertEqual(sorted(p.name for p in Path(d).iterdir()), ["Mithlond-9.9.9-x86_64.AppImage"])
+
+    def test_update_rejects_bad_downloads(self):
+        from mithlond import selfupdate
+        good = b"\x7fELF" + b"\x02\x01\x01\x00" + b"AI\x02" + b"x" * 100
+        cases = [("checksum", good, "0" * 64), ("not an AppImage", b"<html>error</html>", None)]
+        for label, payload, sha in cases:
+            with self.subTest(label), tempfile.TemporaryDirectory() as d:
+                url = self._serve(payload)
+                cur = Path(d) / "Mithlond-1.3.0-x86_64.AppImage"
+                cur.write_bytes(b"old")
+                with self.assertRaises(selfupdate.UpdateError):
+                    selfupdate.update(self._release(url, payload, sha), current=cur)
+                self.assertEqual(cur.read_bytes(), b"old")  # current version untouched
+                self.assertEqual([p.name for p in Path(d).iterdir()], [cur.name])  # no partial files left
+        with tempfile.TemporaryDirectory() as d:  # truncated download
+            url = self._serve(good)
+            cur = Path(d) / "M.AppImage"
+            cur.write_bytes(b"old")
+            rel = self._release(url, good)
+            rel.asset_size += 10
+            with self.assertRaises(selfupdate.UpdateError):
+                selfupdate.update(rel, current=cur)
+            self.assertTrue(cur.exists())
+
+    def test_can_self_update(self):
+        from mithlond import selfupdate
+        old = os.environ.pop("APPIMAGE", None)
+        try:
+            self.assertFalse(selfupdate.can_self_update()[0])
+            with tempfile.TemporaryDirectory() as d:
+                f = Path(d) / "M.AppImage"
+                f.write_bytes(b"x")
+                os.environ["APPIMAGE"] = str(f)
+                self.assertEqual(selfupdate.running_appimage(), f)
+                self.assertTrue(selfupdate.can_self_update()[0])
+        finally:
+            os.environ.pop("APPIMAGE", None)
+            if old:
+                os.environ["APPIMAGE"] = old
+
+
 class GameModeTests(unittest.TestCase):
     def test_group_check(self):
         import grp

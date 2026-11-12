@@ -69,6 +69,10 @@ class Settings:
     companion_close_with_game: bool = True
     companion_skip_updater: bool = True  # start its main class directly; its own updater can hang
 
+    # Mithlond itself
+    check_updates_on_start: bool = True
+    skipped_version: str = ""  # "Skip this version" on the update banner
+
     # Music
     songbook_auto: bool = True
     maestro_path: str = ""

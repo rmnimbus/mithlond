@@ -6,7 +6,9 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDockWidget, QMainWindow, QMessageBox, QPlainTextEdit, QTabWidget
+from PySide6.QtWidgets import (
+    QDockWidget, QMainWindow, QMessageBox, QPlainTextEdit, QTabWidget, QVBoxLayout, QWidget,
+)
 
 from .. import __version__
 from ..config import APP_NAME, check_game_dir
@@ -16,6 +18,7 @@ from .context import AppContext
 from .play_tab import PlayTab
 from .settings_tab import SettingsTab
 from .songs_tab import SongsTab
+from .updater import UpdateBanner, UpdateController
 
 ICON = Path(__file__).resolve().parent.parent / "resources" / "mithlond.svg"
 
@@ -39,7 +42,16 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.songs, "Music")
         self.tabs.addTab(self.companion, "Companion")
         self.tabs.addTab(self.settings, "Settings")
-        self.setCentralWidget(self.tabs)
+        self.update_banner = UpdateBanner()
+        central = QWidget()
+        cl = QVBoxLayout(central)
+        cl.setContentsMargins(0, 0, 0, 0)
+        cl.setSpacing(4)
+        cl.addWidget(self.update_banner)
+        cl.addWidget(self.tabs)
+        self.setCentralWidget(central)
+        self.updater = UpdateController(ctx, self, self.update_banner)
+        self.settings.attach_updater(self.updater)
 
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
@@ -63,6 +75,7 @@ class MainWindow(QMainWindow):
             ctx.log("Choose your LOTRO game folder on the Settings tab")
         else:
             self.play.load_worlds()
+        self.updater.check_at_startup()
 
     def closeEvent(self, e):
         if self.ctx.games:
