@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.4.3
+
+- **Proton works out of the box.** The AppImage includes umu-run (umu-launcher 1.4.4), so the Proton runners
+  need nothing installed. The *umu-run* path setting is gone. The first game start downloads the Steam Runtime
+  (and UMU-Proton, if chosen), which takes a few minutes.
+- **Proton is the default runner.** New setups start with Proton. Setups from older versions that were left on
+  system Wine switch to Proton if Wine isn't installed. "Wine (system)" stays in the list, greyed out when Wine
+  isn't installed.
+- **Faugus Flatpak support.** Mithlond now reads the Faugus Flatpak's game list too. On a first start it uses the
+  prefix and Proton build of your Faugus LOTRO entry, so plugins and settings carry over. Proton builds are also
+  found in Flatpak Steam and `/usr/share/steam/compatibilitytools.d`.
+- **The AppImage bundles all its libraries** except the ones every Linux desktop provides and an AppImage must
+  take from the system (glibc, graphics drivers, X11/Wayland core, fonts). The others come from Debian 11 and
+  are checked by SHA-256. Mithlond needs glibc 2.34 or newer (Linux Mint 21, Ubuntu 22.04, Debian 12, Fedora 35
+  and newer). The unused GTK3 theme, framebuffer and VNC plugins are no longer included.
+
 ## 1.4.2
 
 - **Fix: the AppImage didn't start on Linux Mint, Ubuntu and other distributions without `libxcb-cursor0`**

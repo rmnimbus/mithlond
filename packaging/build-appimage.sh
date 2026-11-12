@@ -1,7 +1,7 @@
 #!/bin/sh
 # Build Mithlond-<version>-x86_64.AppImage: bundled Python 3.13 (python-appimage, manylinux_2_28)
 # + PySide6-Essentials + requests, pruned to the Qt libraries the app actually loads.
-#   packaging/build-appimage.sh [output-dir]      (needs: curl, readelf, ar, python3; no root, no FUSE)
+#   packaging/build-appimage.sh [output-dir]      (needs: curl, readelf, python3; no root, no FUSE)
 set -eu
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:-$SRC/dist}"
@@ -22,6 +22,7 @@ cd AppDir
 PY=opt/python3.13/bin/python3.13
 SP=opt/python3.13/lib/python3.13/site-packages
 PYTHONNOUSERSITE=1 $PY -s -m pip install -q --no-cache-dir --disable-pip-version-check "$PYSIDE" requests
+PYTHONNOUSERSITE=1 $PY -s -m pip install -q --no-cache-dir --disable-pip-version-check --target "$WORK/tools" patchelf
 
 # --- prune Qt: keep QtCore/QtGui/QtWidgets bindings and only the libraries they and the kept plugins need
 P6=$SP/PySide6
@@ -36,6 +37,13 @@ rm -rf "$P6"/libpyside6qml.* "$P6"/svgtoqml "$P6"/Qt/qml "$P6"/Qt/translations "
        "$P6"/qmllint "$P6"/qmlimportscanner "$P6"/doc "$P6"/glue "$P6"/include "$P6"/scripts "$P6"/typesystems \
        "$P6"/examples "$P6"/pyside6-*
 find "$P6"/Qt/plugins \( -name libqeglfs-kms-integration.so -o -name libqpdf.so -o -name libqtvirtualkeyboardplugin.so \) -delete
+# Only the X11 (xcb), Wayland, offscreen and minimal platforms are kept: no framebuffer/EGLFS/VNC/evdev input.
+# No GTK3 theme plugin either: it loads the host's GTK into the process, which needs a newer GLib than the
+# bundled one on some systems; Mithlond has its own theme, and file dialogs use the desktop portal or Qt's own.
+rm -rf "$P6"/Qt/plugins/egldeviceintegrations "$P6"/Qt/plugins/generic "$P6"/Qt/plugins/platformthemes/libqgtk3.so
+rm -f "$P6"/Qt/plugins/platforms/libqeglfs.so "$P6"/Qt/plugins/platforms/libqlinuxfb.so \
+      "$P6"/Qt/plugins/platforms/libqminimalegl.so "$P6"/Qt/plugins/platforms/libqvkkhrdisplay.so \
+      "$P6"/Qt/plugins/platforms/libqvnc.so
 python3 - "$P6" <<'PY'
 import glob, os, re, subprocess, sys
 root = sys.argv[1]; lib = os.path.join(root, "Qt/lib")
@@ -57,30 +65,6 @@ if broken:
 print("Qt libraries kept:", len(keep))
 PY
 
-# --- xcb-util libraries for Qt's X11 plugin. Qt >= 6.5 needs libxcb-cursor, which Ubuntu/Mint and other
-# distros don't install by default ("xcb-cursor0 or libxcb-cursor0 is needed to load the Qt xcb platform
-# plugin"). Bundled next to libQt6XcbQpa (RUNPATH $ORIGIN). Pinned Debian builds that need glibc <= 2.14;
-# deb.debian.org first, snapshot.debian.org (by SHA-1) once the version leaves the mirror.
-mkdir -p "$WORK/xcb"
-while read -r src deb sha256 sha1; do
-    f="$WORK/xcb/$deb"
-    curl -fsSL --retry 3 -o "$f" "https://deb.debian.org/debian/pool/main/x/$src/$deb" \
-        || curl -fsSL --retry 3 -o "$f" "https://snapshot.debian.org/file/$sha1"
-    echo "$sha256  $f" | sha256sum -c --quiet
-    ( cd "$WORK/xcb" && ar x "$f" data.tar.xz && tar -xJf data.tar.xz --wildcards './usr/lib/x86_64-linux-gnu/*.so.*' \
-      && rm data.tar.xz )
-done <<'DEBS'
-xcb-util-cursor libxcb-cursor0_0.1.4-1_amd64.deb a4b3c32dc008275ffcacccc1c77c030f01aad38e232e05d5ad116b76656c607c 65e6e05bd9d8485ea4203a4723d19e9ee551f277
-xcb-util-wm libxcb-icccm4_0.4.2-1_amd64.deb 28f04c7fa76939bbc03fbaa1191dc58200c0c894d48ac6105a7039ba4d223b4a 76c1124e016c60ef93db0ef8fc6208b0fd6f18f0
-xcb-util-image libxcb-image0_0.4.0-2+b2_amd64.deb 81e2654e1b1da5cff9ea2bf46970a46eb5c81f1e35b1356691705e8cd6ab3ed6 088d52669e858425a5af10b2b74e82acbed41953
-xcb-util-keysyms libxcb-keysyms1_0.4.1-1_amd64.deb 6989138382e5b9966aa731db68f851858c1d40cf8c98d7e5d7952c9e5a09d710 2a740f96c46a97efe924740919e69143749f84e9
-xcb-util-renderutil libxcb-render-util0_0.3.10-1_amd64.deb 9bdd6247e45cea5047e4da883dabf168366474fb1b00a37bb194359ca1f975ab f7d80f7bba76d14c24324e3d228cc1f32cc263e7
-xcb-util libxcb-util1_0.4.1-1_amd64.deb c242371fdfc806aa5599290150c6008a723c9b0fdb34ac6688f1a4083682172a 4cbc14f510c6ebf03bc1cec99e93f966c4be33c2
-DEBS
-for l in libxcb-cursor.so.0 libxcb-icccm.so.4 libxcb-image.so.0 libxcb-keysyms.so.1 libxcb-render-util.so.0 libxcb-util.so.1; do
-    cp -L "$WORK/xcb/usr/lib/x86_64-linux-gnu/$l" "$P6/Qt/lib/$l"
-done
-
 # --- drop build-only and unused stdlib bits
 rm -rf AppRun python.png ./*.desktop .DirIcon usr/share/applications usr/share/icons usr/share/metainfo usr/share/tcltk \
        usr/bin/pip* $SP/pip $SP/pip-* $SP/build $SP/build-* $SP/pyproject_hooks* $SP/packaging $SP/packaging-* \
@@ -90,6 +74,24 @@ rm -rf AppRun python.png ./*.desktop .DirIcon usr/share/applications usr/share/i
 # --- the app
 cp -r "$SRC/mithlond" "$SP/mithlond"
 find . -name __pycache__ -prune -exec rm -rf {} +
+
+# --- umu-launcher's umu-run, which runs Proton outside Steam (and downloads the Steam Runtime and UMU-Proton on
+# first use). It's a Python zipapp with its dependencies inside; Mithlond runs it with the bundled Python, so
+# nothing has to be installed on the system. GPL-3.0, https://github.com/Open-Wine-Components/umu-launcher
+UMU_VER=1.4.4
+UMU_SHA256=eb590691841f7fad3fc3ad8fd5db4ccb87849fe7948e62b28ece7a4ee48cc851
+curl -fsSL --retry 3 -o "$WORK/umu.tar" \
+    "https://github.com/Open-Wine-Components/umu-launcher/releases/download/$UMU_VER/umu-launcher-$UMU_VER-zipapp.tar"
+echo "$UMU_SHA256  $WORK/umu.tar" | sha256sum -c --quiet
+tar -xf "$WORK/umu.tar" -C "$WORK" umu/umu-run
+mkdir -p opt/umu
+cp "$WORK/umu/umu-run" opt/umu/umu-run
+chmod 755 opt/umu/umu-run
+$PY -I opt/umu/umu-run --version | grep -q "umu-launcher version $UMU_VER"
+
+# --- every other library the app needs, except what must come from the host (packaging/excludelist):
+# from Debian 11, verified against its pinned package index; see packaging/bundle_libs.py
+python3 "$SRC/packaging/bundle_libs.py" . "$P6/Qt/lib" "$SRC/packaging/excludelist" "$WORK/tools/bin/patchelf"
 cat > AppRun <<'SH'
 #!/bin/sh
 # Mithlond AppImage entry point: run the bundled Python in isolated mode (ignores PYTHONPATH,

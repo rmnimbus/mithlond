@@ -1,10 +1,13 @@
 """Unit tests for protocol parsing, songs and addon installation (no network, no game needed)."""
 
+import contextlib
+import json
 import os
 import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 import zipfile
 from pathlib import Path
 
@@ -19,6 +22,16 @@ os.environ["XDG_DATA_HOME"] = f"{_tmp_home}/data"
 
 from mithlond import addons, gls, songs  # noqa: E402
 from mithlond.config import Settings, check_game_dir  # noqa: E402
+
+
+@contextlib.contextmanager
+def fake_bundled_umu(d):
+    """An AppDir with opt/umu/umu-run, as inside the AppImage. Yields the umu-run path."""
+    umu = Path(d) / "appdir" / "opt" / "umu" / "umu-run"
+    umu.parent.mkdir(parents=True, exist_ok=True)
+    umu.write_text("#!/usr/bin/env python3\n")
+    with mock.patch.dict(os.environ, {"APPDIR": str(Path(d) / "appdir")}):
+        yield umu
 
 
 class GLSTests(unittest.TestCase):
@@ -359,7 +372,7 @@ class RunnerTests(unittest.TestCase):
                     self.skipTest("running as root")
                 self.assertIn("not writable", config.prefix_problem(ro))
                 with self.assertRaises(runner.RunnerError):
-                    runner.windows_command(Settings(wine_binary="/bin/sh", wine_prefix=str(ro)), "g.exe", [])
+                    runner.windows_command(Settings(runner="wine", wine_binary="/bin/sh", wine_prefix=str(ro)), "g.exe", [])
             finally:
                 ro.chmod(0o755)
             self.assertIsNone(config.prefix_problem(home / "newprefix"))
@@ -368,19 +381,17 @@ class RunnerTests(unittest.TestCase):
             (proton / "config_info").touch()
             self.assertIn("created by Proton", config.wine_prefix_problem(proton))
             with self.assertRaises(runner.RunnerError):
-                runner.windows_command(Settings(wine_binary="/bin/sh", wine_prefix=str(proton)), "g.exe", [])
+                runner.windows_command(Settings(runner="wine", wine_binary="/bin/sh", wine_prefix=str(proton)), "g.exe", [])
 
     def test_umu_join(self):
         from mithlond import runner
-        with tempfile.TemporaryDirectory() as d:
-            umu = Path(d) / "umu-run"
-            umu.write_text("#!/bin/sh\n")
-            s = Settings(runner="umu", umu_run=str(umu), wine_prefix=str(Path(d) / "pfx"), proton_path="/p/GE",
+        with tempfile.TemporaryDirectory() as d, fake_bundled_umu(d) as umu:
+            s = Settings(runner="umu", wine_prefix=str(Path(d) / "pfx"), proton_path="/p/GE",
                          extra_env={"DXVK_HUD": "fps"})
             argv, env = runner.windows_command(s, "game.exe", ["-x"])
-            self.assertEqual(argv, [str(umu), "game.exe", "-x"])
+            self.assertEqual(argv, [sys.executable, "-I", str(umu), "game.exe", "-x"])  # the AppImage's own Python
             argv, _ = runner.windows_command(s, "/home/me/Games/lotro/x64/lotroclient64.exe", [])
-            self.assertEqual(argv[1], "Z:\\home\\me\\Games\\lotro\\x64\\lotroclient64.exe")
+            self.assertEqual(argv[3], "Z:\\home\\me\\Games\\lotro\\x64\\lotroclient64.exe")
             self.assertEqual(runner.dos_path("C:\\x.exe"), "C:\\x.exe")
             self.assertEqual((env["WINEPREFIX"], env["PROTONPATH"], env["DXVK_HUD"]), (str(Path(d) / "pfx"), "/p/GE", "fps"))
             self.assertNotIn("PROTON_VERB", env)
@@ -402,10 +413,8 @@ class RunnerTests(unittest.TestCase):
             if config.host_arch() == "x86_64":
                 self.assertIn("is an aarch64 build", config.proton_problem(arm))
                 self.assertIsNone(config.proton_problem(x86))
-                umu = Path(d) / "umu-run"
-                umu.write_text("#!/bin/sh\n")
-                with self.assertRaises(runner.RunnerError):
-                    runner.windows_command(Settings(runner="umu", umu_run=str(umu), proton_path=str(arm),
+                with fake_bundled_umu(d), self.assertRaises(runner.RunnerError):
+                    runner.windows_command(Settings(runner="umu", proton_path=str(arm),
                                                     wine_prefix=str(Path(d) / "pfx")), "g.exe", [])
 
     def test_prefs_args(self):
@@ -424,7 +433,7 @@ class RunnerTests(unittest.TestCase):
             (src / "UserPreferences.ini").write_text("[Display]\nFullScreen=False\n")
             (src / "lotro.keymap").write_text("keys")
             docs2 = Path(d) / "new"
-            s2 = Settings(documents_dir=str(docs2), wine_prefix=str(pfx), wine_binary="/bin/sh")
+            s2 = Settings(documents_dir=str(docs2), wine_prefix=str(pfx), runner="wine", wine_binary="/bin/sh")
             runner.prefs_args(s2)
             self.assertEqual((docs2 / "UserPreferences.ini").read_text(), "[Display]\nFullScreen=False\n")
             self.assertEqual((docs2 / "lotro.keymap").read_text(), "keys")
@@ -439,7 +448,7 @@ class RunnerTests(unittest.TestCase):
         from mithlond import config
         s = Settings(runner="onelauncher")
         config.autodetect(s)
-        self.assertEqual(s.runner, "wine")
+        self.assertEqual(s.runner, "umu")
 
 
 class ProcTests(unittest.TestCase):
@@ -559,7 +568,7 @@ class CompanionTests(unittest.TestCase):
             self.assertEqual(cwd, base / "app")
             wine = Path(d) / "wine"
             wine.write_text("#!/bin/sh\n")
-            s = Settings(companion_dir=str(base), wine_binary=str(wine), wine_prefix=str(Path(d) / "pfx"))
+            s = Settings(companion_dir=str(base), runner="wine", wine_binary=str(wine), wine_prefix=str(Path(d) / "pfx"))
             argv, env, cwd = runner.companion_command(s)
             self.assertEqual(argv[:2], [str(wine), java])
             self.assertIn("delta.games.lotro.Main", argv)
@@ -567,23 +576,24 @@ class CompanionTests(unittest.TestCase):
             argv, env, cwd = runner.companion_command(s)
             self.assertTrue(argv[1].endswith("LotRO Companion.exe"))
             # Proton-EM-style builds (start.exe /unix) can't run javaw.exe directly: official launcher instead
-            umu = Path(d) / "umu-run"
-            umu.write_text("#!/bin/sh\n")
+            umu_ctx = fake_bundled_umu(d)
+            umu_ctx.__enter__()
+            self.addCleanup(umu_ctx.__exit__, None, None, None)
             em = Path(d) / "Proton-EM"
             em.mkdir()
             (em / "proton").write_text('argv = [g_proton.wine64_bin, "c:\\\\windows\\\\system32\\\\start.exe", "/unix"]\n')
             ge = Path(d) / "GE-Proton"
             ge.mkdir()
             (ge / "proton").write_text('log("launching with umu.exe")\n')
-            s = Settings(companion_dir=str(base), runner="umu", umu_run=str(umu), wine_prefix=str(Path(d) / "pfx"),
+            s = Settings(companion_dir=str(base), runner="umu", wine_prefix=str(Path(d) / "pfx"),
                          proton_path=str(em))
             self.assertTrue(runner.proton_uses_start_unix(s))
             argv, env, cwd = runner.companion_command(s)
-            self.assertEqual(argv[1], str(base / "LotRO Companion.exe"))  # Linux path, official launcher
+            self.assertEqual(argv[3], str(base / "LotRO Companion.exe"))  # Linux path, official launcher
             s.proton_path = str(ge)
             self.assertFalse(runner.proton_uses_start_unix(s))
             argv, env, cwd = runner.companion_command(s)
-            self.assertEqual(argv[1], java)  # direct launch, Linux path
+            self.assertEqual(argv[3], java)  # direct launch, Linux path
             self.assertIn("delta.games.lotro.Main", argv)
 
 
@@ -900,6 +910,43 @@ class SettingsTests(unittest.TestCase):
         s.save()
         t = Settings.load()
         self.assertEqual((t.game_dir, t.extra_env, t.accounts[0].world), ("/g", {"A": "1"}, "Glamdring"))
+
+    def test_faugus_flatpak_without_wine(self):
+        """A Faugus Flatpak user with no system Wine: Proton via the bundled umu, in Faugus's LOTRO prefix."""
+        from mithlond import config
+        with tempfile.TemporaryDirectory() as d, fake_bundled_umu(d) as umu:
+            home = Path(d) / "home"
+            flat = home / ".var/app/io.github.Faugus.faugus-launcher/data/faugus-launcher"
+            flat.mkdir(parents=True)
+            (flat / "umu-run").write_text("#!/usr/bin/env python3\n")
+            pfx = home / "Faugus" / "lotro"
+            pfx.mkdir(parents=True)
+            compat = home / ".local/share/Steam/compatibilitytools.d"
+            for name in ("GE-Proton10-1", "Proton-CachyOS Latest"):
+                (compat / name).mkdir(parents=True)
+                (compat / name / "proton").write_text("")
+            (flat / "games.json").write_text(json.dumps([
+                {"title": "Other", "path": "/x/other.exe", "prefix": str(home / "Faugus/default"), "runner": ""},
+                {"title": "LOTRO", "path": "/games/lotro/LotroLauncher.exe", "prefix": str(pfx),
+                 "runner": "Proton-CachyOS Latest", "last_played": "2026-11-10"},
+            ]))
+            dirs = (home / ".local/share/faugus-launcher", flat)
+            with mock.patch.object(config, "FAUGUS_DATA_DIRS", dirs), \
+                    mock.patch.object(config, "COMPAT_DIRS", (compat,)), \
+                    mock.patch.object(config, "HOME", home), \
+                    mock.patch.object(config.shutil, "which", lambda *_: None):
+                self.assertEqual(config.detect_umu_run(), str(flat / "umu-run"))  # Faugus Flatpak's own
+                self.assertEqual(config.umu_command(), [sys.executable, "-I", str(umu)])  # bundled wins
+                s = Settings(runner="wine")  # saved by Mithlond <= 1.4.2, whose default was system Wine
+                notes = config.autodetect(s)
+                self.assertEqual((s.runner, s.wine_prefix), ("umu", str(pfx)))
+                self.assertEqual(s.proton_path, str(compat / "Proton-CachyOS Latest"))  # Faugus's choice
+                self.assertIn("Runner: Proton (Wine isn't installed)", notes)
+                # a deliberate "umu's default" choice in an existing config is left alone
+                s = Settings(runner="umu")
+                Settings().save()
+                config.autodetect(s)
+                self.assertEqual((s.proton_path, s.wine_prefix), ("", ""))
 
 
 if __name__ == "__main__":

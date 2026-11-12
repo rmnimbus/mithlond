@@ -134,7 +134,7 @@ class EndToEnd(unittest.TestCase):
                              "case \"$1\" in *Companion*) exec sleep 60;; *) echo client-output; sleep 4;; esac\n")
         fake_wine.chmod(0o755)
 
-        s = Settings(game_dir=str(game), documents_dir=str(docs), wine_binary=str(fake_wine),
+        s = Settings(game_dir=str(game), documents_dir=str(docs), runner="wine", wine_binary=str(fake_wine),
                      wine_prefix=str(root / "pfx"), companion_dir=str(comp), companion_delay=2,
                      companion_with_game=True, check_updates_on_start=False)
         s.save()

@@ -14,7 +14,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QTimer, Signal
 
 from .config import (
-    LOTRO_STEAM_APPID, Settings, detect_umu_run, prefix_problem, proton_problem, wine_prefix_problem,
+    LOTRO_STEAM_APPID, Settings, prefix_problem, proton_problem, umu_command, wine_prefix_problem,
 )
 from .hostenv import host_env
 
@@ -90,9 +90,10 @@ def windows_command(s: Settings, exe: str | Path, args: list[str],
     env.setdefault("DXVK_LOG_LEVEL", "error")
     prefix = s.prefix_path()
     if s.runner == "umu":
-        umu = s.umu_run or shutil.which("umu-run") or detect_umu_run()
-        if not umu or not Path(umu).exists():
-            raise RunnerError("umu-run was not found. Install umu-launcher, or pick a Wine runner in Settings.")
+        umu = umu_command()
+        if not umu:  # only when running from source: the AppImage brings its own
+            raise RunnerError("umu-run was not found. Install umu-launcher, or use the Mithlond AppImage, "
+                              "which includes it.")
         if problem := prefix_problem(prefix):
             raise RunnerError(f"Prefix problem: {problem}. Change it in Settings.")
         env["WINEPREFIX"] = str(prefix)
@@ -107,7 +108,7 @@ def windows_command(s: Settings, exe: str | Path, args: list[str],
         # Hand Proton a Windows path: some builds (Proton-EM) start Linux paths with `start.exe /unix`, which
         # runs the program from its own folder instead of ours. lotroclient64.exe then misses corestrings.dll,
         # which lives in the game folder, not in x64/ ("corestrings.dll not found").
-        argv = [umu, dos_path(exe) if dos else str(exe), *args]
+        argv = [*umu, dos_path(exe) if dos else str(exe), *args]
     else:
         wine = shutil.which(s.wine_binary or "wine") or s.wine_binary
         if not wine or not Path(wine).exists():

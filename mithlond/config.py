@@ -37,11 +37,10 @@ class Settings:
     downloads_dir: str = ""  # empty: <documents_dir>/Downloads (Maestro, WAN Songbook Filler, Companion…)
 
     # How Windows programs are run
-    runner: str = "wine"  # "wine" (wine_binary) or "umu" (Proton via umu-run, proton_path)
+    runner: str = "umu"  # "umu" (Proton via umu-run, proton_path) or "wine" (wine_binary)
     wine_binary: str = "wine"
-    wine_prefix: str = ""  # empty: wine's default (~/.wine)
-    umu_run: str = ""
-    proton_path: str = ""
+    wine_prefix: str = ""  # empty: the runner's default (~/Games/umu/umu-default, or ~/.wine for Wine)
+    proton_path: str = ""  # empty: umu's default (UMU-Proton, downloaded automatically)
     extra_env: dict[str, str] = field(default_factory=dict)
     # Common game options (game client only)
     opt_gamescope: bool = False
@@ -210,15 +209,28 @@ def game_languages(game_dir: Path) -> list[str]:
 
 # ---- auto-detection --------------------------------------------------------
 
+FAUGUS_FLATPAK = HOME / ".var/app/io.github.Faugus.faugus-launcher"
+# Faugus's data folder: native/AppImage/distro package, then the Flatpak's.
+FAUGUS_DATA_DIRS = (HOME / ".local/share/faugus-launcher", FAUGUS_FLATPAK / "data/faugus-launcher")
+
+
 def _faugus_games() -> list[dict]:
-    for p in (HOME / ".local/share/faugus-launcher/games.json", HOME / ".config/faugus-launcher/games.json"):
+    games: list[dict] = []
+    for p in [d / "games.json" for d in FAUGUS_DATA_DIRS] + [HOME / ".config/faugus-launcher/games.json"]:
         try:
             data = json.loads(p.read_text())
-            if isinstance(data, list):
-                return data
         except (OSError, ValueError):
             continue
-    return []
+        if isinstance(data, list):
+            games += [g for g in data if isinstance(g, dict)]
+    return games
+
+
+def faugus_lotro() -> dict | None:
+    """The user's LOTRO entry in Faugus (most recently played first), if any."""
+    lotro = [g for g in _faugus_games()
+             if str(g.get("path", "")).lower().endswith(("lotrolauncher.exe", "lotroclient.exe", "lotroclient64.exe"))]
+    return max(lotro, key=lambda g: str(g.get("last_played", "")), default=None)
 
 
 def detect_game_dirs() -> list[Path]:
@@ -273,10 +285,18 @@ def detect_documents_dirs(settings: Settings | None = None) -> list[Path]:
     return [p for _, p in sorted(found.values(), key=lambda t: t[0], reverse=True)]
 
 
+COMPAT_DIRS = (
+    HOME / ".local/share/Steam/compatibilitytools.d",
+    HOME / ".steam/root/compatibilitytools.d",
+    HOME / ".var/app/com.valvesoftware.Steam/.local/share/Steam/compatibilitytools.d",  # Steam Flatpak
+    Path("/usr/share/steam/compatibilitytools.d"),  # distro packages (e.g. proton-cachyos)
+    HOME / ".local/share/Steam/steamapps/common",
+)
+
+
 def proton_versions() -> list[Path]:
     out = []
-    for base in (HOME / ".local/share/Steam/compatibilitytools.d", HOME / ".steam/root/compatibilitytools.d",
-                 HOME / ".local/share/Steam/steamapps/common"):
+    for base in COMPAT_DIRS:
         if base.is_dir():
             out += sorted(p for p in base.iterdir() if (p / "proton").exists())
     seen, uniq = set(), []
@@ -337,11 +357,47 @@ def detect_prefixes() -> list[Path]:
     return out
 
 
+def bundled_umu_run() -> Path | None:
+    """umu-run shipped inside the AppImage (packaging/build-appimage.sh), run with the AppImage's Python."""
+    appdir = os.environ.get("APPDIR")
+    if appdir and (p := Path(appdir) / "opt/umu/umu-run").is_file():
+        return p
+    return None
+
+
 def detect_umu_run() -> str:
+    """A umu-run on the system (running from source): PATH, pip/pipx, or the one Faugus downloads."""
     for c in (shutil.which("umu-run"), HOME / ".local/bin/umu-run", "/usr/bin/umu-run",
-              HOME / ".local/share/faugus-launcher/umu-run"):
-        if c and Path(c).exists():
+              *(d / "umu-run" for d in FAUGUS_DATA_DIRS)):
+        if c and Path(c).is_file():
             return str(c)
+    return ""
+
+
+def umu_command() -> list[str]:
+    """How to start umu-run: the bundled copy inside the AppImage, otherwise one found on the system."""
+    import sys
+    if bundled := bundled_umu_run():
+        return [sys.executable, "-I", str(bundled)]
+    found = detect_umu_run()
+    return [found] if found else []
+
+
+def wine_installed(s: Settings) -> bool:
+    w = s.wine_binary or "wine"
+    return bool(shutil.which(w) or (os.sep in w and Path(w).is_file()))
+
+
+def best_proton() -> str:
+    """The Proton to start with: Faugus's choice for LOTRO, else the newest usable one, else '' (umu's default)."""
+    usable = [p for p in proton_versions() if not proton_problem(p)]
+    if (g := faugus_lotro()) and g.get("runner"):
+        for p in usable:
+            if p.name == g["runner"]:
+                return str(p)
+    usable = [p for p in usable if "steamapps" not in str(p)]  # Steam's own Protons need Steam's runtime layout
+    if usable:
+        return str(max(usable, key=lambda p: p.stat().st_mtime))
     return ""
 
 
@@ -358,10 +414,25 @@ def autodetect(s: Settings) -> list[str]:
         if docs:
             s.documents_dir = str(docs[0])
             notes.append(f"Documents folder: {docs[0]}")
-    if not s.umu_run:
-        s.umu_run = detect_umu_run()
+    fresh = not CONFIG_FILE.exists()
     if s.runner not in ("wine", "umu"):  # e.g. the removed "onelauncher" mode
-        s.runner = "wine"
+        s.runner = "umu"
+    if s.runner == "wine" and not wine_installed(s) and umu_command():
+        fresh = True
+        # Nothing to run Wine with (e.g. a Faugus user: Faugus only uses Proton). Proton via umu always works.
+        s.runner = "umu"
+        if s.wine_prefix and (Path(s.wine_prefix).expanduser() / "system.reg").exists() \
+                and not is_proton_prefix(Path(s.wine_prefix).expanduser()):
+            s.wine_prefix = ""  # a plain-Wine prefix: Proton would convert it, so use umu's own instead
+        notes.append("Runner: Proton (Wine isn't installed)")
+    if fresh and s.runner == "umu" and not s.proton_path and not s.wine_prefix:
+        # Fresh setup: start where Faugus already plays LOTRO, if it does.
+        if (g := faugus_lotro()) and g.get("prefix") and Path(g["prefix"]).is_dir():
+            s.wine_prefix = g["prefix"]
+            notes.append(f"Prefix (from Faugus): {g['prefix']}")
+        s.proton_path = best_proton()
+        if s.proton_path:
+            notes.append(f"Proton: {Path(s.proton_path).name}")
     if s.game_path and s.language not in game_languages(s.game_path):
         s.language = game_languages(s.game_path)[0]
     return notes

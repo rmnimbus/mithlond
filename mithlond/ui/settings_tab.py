@@ -42,10 +42,6 @@ def parse_env(text: str) -> dict[str, str]:
     return env
 
 
-def check_file(p: Path) -> tuple[bool, str]:
-    return (True, "Found") if p.is_file() else (False, "File not found")
-
-
 class SettingsTab(QWidget):
     def __init__(self, ctx: AppContext, parent=None):
         super().__init__(parent)
@@ -80,14 +76,14 @@ class SettingsTab(QWidget):
 
         # --- runner
         self.runner = QComboBox()
-        self.runner.setToolTip("Wine runs the game directly; Proton runs it through umu-run (like Faugus/Steam).")
+        self.runner.setToolTip("Proton runs the game through umu-run, like Faugus and Steam (umu-run is built into\n"
+                               "the AppImage). Wine needs Wine installed on your system.")
         self.prefix = QComboBox()
         self.prefix.setEditable(True)
         self.prefix.lineEdit().setPlaceholderText("Empty = the runner's default prefix")
         self.prefix_browse = QPushButton("Browse…")
         self.runner_info = QLabel()
         self.runner_info.setWordWrap(True)
-        self.umu = PathPicker(directory=False, validator=check_file, placeholder="Path to umu-run (auto-detected)")
         self.env = QPlainTextEdit()
         self.env.setPlaceholderText("One per line, e.g.\nDXVK_HUD=fps\nPROTON_ENABLE_WAYLAND=1")
         self.env.setFixedHeight(90)
@@ -103,8 +99,6 @@ class SettingsTab(QWidget):
         run.addRow("Runner", rr)
         run.addRow("Prefix", pr)
         run.addRow("", self.runner_info)
-        self.umu_label = QLabel("umu-run")
-        run.addRow(self.umu_label, self.umu)
         run.addRow("Environment\nvariables", self.env)
         self.opts: dict[str, QCheckBox] = {}
         grid = QGridLayout()
@@ -182,7 +176,7 @@ class SettingsTab(QWidget):
         self.load_values()
 
         self.downloads_reset.clicked.connect(lambda: self.downloads.set_text("", emit=True))
-        for picker in (self.game, self.docs, self.downloads, self.umu):
+        for picker in (self.game, self.docs, self.downloads):
             picker.changed.connect(self.save)
         for w in (self.high_res,):
             w.toggled.connect(self.save)
@@ -227,7 +221,6 @@ class SettingsTab(QWidget):
         self.update_auto.setChecked(s.check_updates_on_start)
         self._fill_runners()
         self._fill_prefixes()
-        self.umu.set_text(s.umu_run)
         self.env.setPlainText("\n".join(f"{k}={v}" for k, v in s.extra_env.items()))
         self.client.setCurrentIndex(max(self.client.findData(s.client), 0))
         self._fill_languages()
@@ -256,6 +249,8 @@ class SettingsTab(QWidget):
         self.runner.clear()
         sys_wine = shutil.which("wine")
         self.runner.addItem(f"Wine (system{': ' + sys_wine if sys_wine else ', not installed'})", ("wine", "wine"))
+        if not sys_wine and (s.runner, s.wine_binary) != ("wine", "wine"):
+            self.runner.model().item(self.runner.count() - 1).setEnabled(False)
         for p in config.proton_versions():
             arch = config.proton_arch(p)
             if arch and arch != config.host_arch():
@@ -320,12 +315,14 @@ class SettingsTab(QWidget):
     def _runner_fields(self) -> None:
         s = self.ctx.settings
         umu = s.runner == "umu"
-        self.umu.setVisible(umu)
-        self.umu_label.setVisible(umu)
         prefix = s.prefix_path()
         problem = config.prefix_problem(prefix) if umu else config.wine_prefix_problem(prefix)
         if umu and s.proton_path and not problem:
             problem = config.proton_problem(Path(s.proton_path).expanduser())
+        if umu and not problem and not config.umu_command():
+            problem = "umu-run was not found (running from source: install umu-launcher)"
+        if not umu and not problem and not config.wine_installed(s):
+            problem = f"Wine ('{s.wine_binary or 'wine'}') isn't installed. Pick a Proton runner instead"
         if problem:
             text, ok = f"✘ {problem}", False
         else:
@@ -351,7 +348,6 @@ class SettingsTab(QWidget):
         s.check_updates_on_start = self.update_auto.isChecked()
         self.downloads.validate()
         s.wine_prefix = self.prefix.currentText().strip()
-        s.umu_run = self.umu.text()
         s.extra_env = parse_env(self.env.toPlainText())
         s.client = self.client.currentData()
         s.language = self.language.currentText() or "English"

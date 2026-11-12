@@ -28,10 +28,12 @@ It never goes into a file.
    - in your file manager: right-click the file → **Properties** → **Permissions** → tick
      **"Allow executing file as program"** (or "Executable").
 
-   Then double-click it. Everything it needs is bundled. You only need **Wine** or **umu-run** on your system.
+   Then double-click it. Everything it needs is bundled, including umu-run for Proton: nothing else has to be
+   installed. The first game start with Proton downloads the Steam Runtime and Proton, which takes a few minutes.
 2. **Settings → LOTRO game folder:** pick the folder with `lotroclient.exe` (Detect tries the usual places).
-3. **Settings → Runners and Prefix:** choose system Wine or a Proton build, and the prefix (the Wine "bottle")
-   the game runs in. The defaults are `~/.wine` for Wine and umu's own prefix for Proton.
+3. **Settings → Runners and Prefix:** Proton is the default. Mithlond picks a Proton build you already have, or
+   umu's own (UMU-Proton). If you play LOTRO through Faugus (including the Flatpak), it starts with Faugus's
+   prefix and Proton. You can also choose system Wine, if it's installed, and any other prefix.
 4. **Settings → Game documents folder:** this is where the game keeps plugins, music and settings. Use
    **Choose…** to pick one of the folders found on your computer (or make a new one). Mithlond starts the game
    with that folder, whatever Wine prefix it runs in.
@@ -45,7 +47,7 @@ More in the **[User guide](docs/user-guide.md)**. If something doesn't work, see
 | Program | Used for |
 |---|---|
 | `secret-tool` (libsecret) and a keyring | Saving your password |
-| `umu-run` (umu-launcher) | Running with Proton |
+| `wine` | The "Wine (system)" runner. Not needed for Proton, the default |
 | `bsdtar` (libarchive) or `7z` | Addons packed as `.rar`/`.7z` |
 | `java` (17+) | Running Maestro natively, and LotRO Companion's "native" mode |
 | `gamescope`, `mangohud`, `gamemoderun` | The matching game options |

@@ -26,6 +26,15 @@ launching. If it happens anyway, press **STOP**, then **PLAY** again.
 The prefix folder isn't writable, or isn't a prefix at all. Pick another one in **Settings → Runners and
 Prefix**. The ✔/✘ line under the prefix box tells you whether the selected runner can use it.
 
+### "Wine ('wine') isn't installed" / "Wine binary 'wine' was not found"
+Mithlond 1.4.2 and older defaulted to system Wine, which many systems don't have (Faugus, for example, only
+uses Proton). Pick a Proton runner in **Settings → Runners and Prefix**. 1.4.3 and later switch to Proton
+automatically when Wine isn't installed, and bring their own umu-run.
+
+### "umu-run was not found"
+Only happens when running Mithlond from source: the AppImage includes umu-run. Install umu-launcher
+(https://github.com/Open-Wine-Components/umu-launcher/releases), or use the AppImage.
+
 ### "…was created by Proton… Plain Wine would convert it"
 You picked system Wine with a prefix made by Proton (Steam, Faugus, umu). Choose a Proton runner for that
 prefix, or a different prefix for Wine.

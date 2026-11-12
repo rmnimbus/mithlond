@@ -13,9 +13,15 @@ Mithlond looks for a LOTRO install and documents folder. If it finds nothing, it
 
 ### Runners and Prefix
 
-- **Runner:** "Wine (system)", any Proton build found in `~/.local/share/Steam/compatibilitytools.d` or Steam,
-  "umu's default" (downloads UMU-Proton automatically), or "Other…" to pick a Wine binary or Proton folder.
-  Proton runners use `umu-run`.
+- **Runner:** any Proton build found on the computer (`~/.local/share/Steam/compatibilitytools.d`, Flatpak Steam,
+  `/usr/share/steam/compatibilitytools.d`, Steam's own), "umu's default" (downloads UMU-Proton automatically),
+  "Wine (system)" when Wine is installed, or "Other…" to pick a Wine binary or Proton folder. Proton runners use
+  umu-run, which is built into the AppImage, so they work without installing anything. The first start with
+  Proton downloads the Steam Runtime (and UMU-Proton, if chosen); that takes a few minutes. When run from source,
+  Mithlond uses an installed umu-run instead (from umu-launcher, or the one Faugus downloads).
+- **First start:** Proton is the default. If Faugus (native or Flatpak) has a LOTRO entry, Mithlond starts with that
+  entry's prefix and Proton build, so plugins and settings carry over. A config from an older Mithlond that was set
+  to system Wine is switched to Proton if Wine isn't installed.
 - **Prefix:** the Wine prefix. If you leave it empty, Wine uses `~/.wine` and umu uses its default prefix. The
   list shows prefixes Mithlond found. The line underneath warns about problems, such as a read-only folder or a
   Proton prefix used with plain Wine (Wine would convert it and break it for Proton).

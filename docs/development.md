@@ -58,14 +58,19 @@ password reaches the log or config.
 
 1. Downloads a relocatable Python 3.13 (python-appimage, manylinux_2_28) and appimagetool.
 2. Installs `PySide6-Essentials` and `requests` into it.
-3. Prunes Qt to the QtCore/QtGui/QtWidgets bindings and the libraries they and the kept plugins need, by
-   following `readelf -d` NEEDED entries. The build fails if a needed library is missing.
-4. Adds the xcb-util libraries Qt's X11 plugin needs that not every distribution installs (`libxcb-cursor`,
-   `-icccm`, `-image`, `-keysyms`, `-render-util`, `-util`): pinned Debian packages, checked by SHA-256 and
-   built for glibc ≤ 2.14. Without `libxcb-cursor`, Qt ≥ 6.5 aborts on X11 (e.g. Linux Mint).
-5. Adds the app, an `AppRun` that runs Python in isolated mode (`-I`), and the desktop file and icon.
+3. Prunes Qt to the QtCore/QtGui/QtWidgets bindings, the X11/Wayland/offscreen/minimal platforms, and the
+   libraries those need, by following `readelf -d` NEEDED entries. No GTK3 theme plugin: it would load the
+   host's GTK, which can need a newer GLib than the bundled one.
+4. Bundles every other library Qt needs except the ones on `packaging/excludelist` (the standard AppImage
+   excludelist: glibc, GPU drivers, libX11/libxcb, fontconfig… which must come from the host).
+   `packaging/bundle_libs.py` takes them from Debian 11 (archived, so its package index never changes; pinned by
+   SHA-256), gives them RUNPATH `$ORIGIN`, and fails the build if a library can't be reached or needs a newer
+   glibc than PySide6 itself (2.34).
+5. Adds umu-launcher's `umu-run` (a Python zipapp, pinned release and SHA-256) as `opt/umu/umu-run`. Mithlond
+   runs it with the bundled Python (`config.umu_command()`), so Proton works without anything installed.
+6. Adds the app, an `AppRun` that runs Python in isolated mode (`-I`), and the desktop file and icon.
 
-The result is about 45 MB. Inside the AppImage, programs that Mithlond starts (wine, umu-run, java,
+The result is about 46 MB. Inside the AppImage, programs that Mithlond starts (wine, umu-run, java,
 secret-tool…) get the user's original environment (`hostenv.py`).
 
 ## Releasing
