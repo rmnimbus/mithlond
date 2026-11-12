@@ -146,6 +146,12 @@ class SettingsTab(QWidget):
         self.update_auto = QCheckBox("Check for updates when Mithlond starts")
         self.update_status = QLabel()
         self.update_status.setWordWrap(True)
+        self.menu_btn = QPushButton("Add to application menu")
+        self.menu_btn.setToolTip("Adds Mithlond to your desktop's app launcher. Mithlond keeps the entry pointing at\n"
+                                 "this AppImage when it updates itself or you move the file.")
+        self.menu_status = QLabel()
+        self.menu_status.setWordWrap(True)
+        self.menu_btn.clicked.connect(self._add_to_menu)
         ok, why = selfupdate.can_self_update()
         how = ("Updates are downloaded from GitHub and replace this AppImage." if ok else
                f"{why} Updates open the download page instead.")
@@ -157,6 +163,10 @@ class SettingsTab(QWidget):
         ab.addRow("Version", vrow)
         ab.addRow("", self.update_auto)
         ab.addRow("", self.update_status)
+        mrow = QHBoxLayout()
+        mrow.addWidget(self.menu_btn)
+        mrow.addWidget(self.menu_status, 1)
+        ab.addRow("Menu", mrow)
         ab.addRow("", subtle(f"{how} Releases: {selfupdate.RELEASES_PAGE.rsplit('/latest', 1)[0]}"))
         about_box = QGroupBox("About && updates")  # && = a literal & in Qt titles
         about_box.setLayout(ab)
@@ -219,6 +229,7 @@ class SettingsTab(QWidget):
         self.downloads.set_text(s.downloads_dir)
         self.use_prefs.setChecked(s.use_prefs)
         self.update_auto.setChecked(s.check_updates_on_start)
+        self._menu_state()
         self._fill_runners()
         self._fill_prefixes()
         self.env.setPlainText("\n".join(f"{k}={v}" for k, v in s.extra_env.items()))
@@ -377,6 +388,33 @@ class SettingsTab(QWidget):
         dlg = DocsChooser(self.ctx.settings, self)
         if dlg.exec() and dlg.chosen:
             self.docs.set_text(str(dlg.chosen), emit=True)
+
+    def _menu_state(self) -> None:
+        from .. import desktopentry, selfupdate
+        me, there = selfupdate.running_appimage(), desktopentry.target()
+        self.menu_btn.setEnabled(me is not None)
+        self.menu_btn.setText("Update menu entry" if there else "Add to application menu")
+        if me is None:
+            self.menu_status.setText("Only for the AppImage.")
+        elif there == me:
+            self.menu_status.setText("✔ In the application menu")
+        elif there:
+            self.menu_status.setText(f"The menu entry starts {there}")
+        else:
+            self.menu_status.setText("")
+
+    def _add_to_menu(self) -> None:
+        from .. import desktopentry, selfupdate
+        me = selfupdate.running_appimage()
+        if me is None:
+            return
+        try:
+            path = desktopentry.install(me)
+        except OSError as e:
+            self.menu_status.setText(f"✘ {e}")
+            return
+        self.ctx.log(f"Added Mithlond to the application menu ({path})")
+        self._menu_state()
 
     def attach_updater(self, updater) -> None:
         self.update_check_btn.clicked.connect(lambda: updater.check(manual=True))

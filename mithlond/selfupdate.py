@@ -138,4 +138,9 @@ def update(release: Release, progress: Callable[[int, int], None] | None = None,
         part.unlink(missing_ok=True)
     if target.resolve() != current.resolve():
         current.unlink(missing_ok=True)  # Linux keeps the running (mounted) copy alive until exit
+    from . import desktopentry
+    try:
+        desktopentry.refresh(target)  # the menu entry follows the new file name
+    except OSError:
+        pass
     return target

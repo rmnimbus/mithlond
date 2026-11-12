@@ -29,6 +29,12 @@ def main() -> int:
 
     settings = Settings.load()
     notes = autodetect(settings)
+    from . import desktopentry, selfupdate
+    try:
+        if desktopentry.refresh(selfupdate.running_appimage()):
+            notes.append(f"Application menu entry now starts {selfupdate.running_appimage()}")
+    except OSError:
+        pass
     settings.save()
     ctx = AppContext(settings)
     win = MainWindow(ctx, notes)

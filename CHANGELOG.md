@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.7
+
+- **Add to application menu** (Settings → About & updates): puts Mithlond in your desktop's app launcher with
+  its icon. The entry follows the AppImage: Mithlond updates it after every self-update (new file name) and at
+  every start (if you moved the file).
+
 ## 1.4.6
 
 - **Game settings search:** a search box narrows the settings live as you type, across all categories (by name,

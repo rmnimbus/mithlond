@@ -1037,6 +1037,31 @@ class GamePrefsTests(unittest.TestCase):
             app.processEvents()
 
 
+class DesktopEntryTests(unittest.TestCase):
+    def test_entry_follows_the_appimage(self):
+        from mithlond import desktopentry as de
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"XDG_DATA_HOME": d}):
+            old = Path(d) / "My Games" / "Mithlond-1.4.6-x86_64.AppImage"
+            new = Path(d) / "My Games" / "Mithlond-1.4.7-x86_64.AppImage"
+            self.assertIsNone(de.target())
+            self.assertFalse(de.refresh(new))  # no entry yet: nothing is created behind the user's back
+            entry = de.install(old)
+            self.assertEqual(entry, Path(d) / "applications/mithlond.desktop")
+            text = entry.read_text()
+            self.assertIn(f'Exec="{old}"', text)
+            self.assertIn("Icon=mithlond", text)
+            self.assertTrue(de.icon_path().read_bytes().startswith(b"<"))
+            self.assertEqual(de.target(), old)
+            self.assertFalse(de.refresh(old))  # already right
+            self.assertTrue(de.refresh(new))   # after an update / a move
+            self.assertEqual(de.target(), new)
+            self.assertEqual(de._quote(Path('/a b/$x"y`z\\w')), '"/a b/\\$x\\"y\\`z\\\\w"')
+            entry.write_text("[Desktop Entry]\nExec=/somewhere/else\n")  # someone else's entry
+            self.assertIsNone(de.target())
+            self.assertFalse(de.refresh(new))
+            self.assertEqual(entry.read_text(), "[Desktop Entry]\nExec=/somewhere/else\n")
+
+
 class SettingsTests(unittest.TestCase):
     def test_documents_subdirs(self):
         s = Settings(documents_dir="/docs")

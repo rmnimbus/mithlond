@@ -176,7 +176,13 @@ startup check off, or check by hand, in **Settings → About & updates**.
 AppImage header and GitHub's SHA-256 checksum. If anything doesn't match, nothing is changed. Otherwise it's made
 executable, the old AppImage is removed, and Mithlond offers to restart into the new version. Your settings are
 kept, because they live in `~/.config/mithlond`, not in the AppImage. The new file is named after its version
-(e.g. `Mithlond-1.4.0-x86_64.AppImage`), so update any menu shortcut that points at the old name.
+(e.g. `Mithlond-1.4.7-x86_64.AppImage`).
+
+**Application menu:** **Settings → About & updates → Add to application menu** adds Mithlond to your desktop's
+app launcher (`~/.local/share/applications/mithlond.desktop` plus its icon). After that, Mithlond keeps the entry
+pointing at the AppImage it runs from, right after an update and at every start, so it keeps working when an
+update changes the file name or you move the AppImage to another folder. Mithlond only changes an entry it wrote
+itself.
 
 ## Files
 
