@@ -43,6 +43,13 @@ Mithlond looks for a LOTRO install and documents folder. If it finds nothing, it
 You can pick the 64- or 32-bit client, the game language (from the installed `client_local_*.dat` files),
 high-resolution textures, and whether the launcher minimizes when the game starts.
 
+**Skip the intro videos** (on by default) skips the Turbine logo video that plays at every start and the
+one-time intro cinematic. The game has no setting for the logo video, so Mithlond renames
+`raw/<language>/logo/turbine_logo.bik` to `turbine_logo.bik.mithlond-skipped` before each start (a game patch
+may bring it back; the next start sets it aside again). The cinematic is marked as seen with
+`[Misc] PlayedIntroMovie=True` in the documents folder's `UserPreferences.ini`. Unticking the option puts the
+logo video back at the next start.
+
 ## Play
 
 - **Account:** type it once and it's remembered. Tick *Save password* to store the password in your keyring.

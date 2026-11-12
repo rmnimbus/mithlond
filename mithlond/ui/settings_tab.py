@@ -129,6 +129,9 @@ class SettingsTab(QWidget):
         self.client.addItem("32-bit (lotroclient.exe)", "win32")
         self.language = QComboBox()
         self.high_res = QCheckBox("High resolution textures")
+        self.skip_intro = QCheckBox("Skip the intro videos")
+        self.skip_intro.setToolTip("Skips the Turbine logo video that plays at every start (Mithlond sets the file\n"
+                                   "aside; unticking puts it back) and marks the intro cinematic as already seen.")
         self.on_start = QComboBox()
         self.on_start.addItem("Keep the launcher open", "stay")
         self.on_start.addItem("Minimize the launcher", "minimize")
@@ -136,6 +139,7 @@ class SettingsTab(QWidget):
         gf.addRow("Client", self.client)
         gf.addRow("Language", self.language)
         gf.addRow("", self.high_res)
+        gf.addRow("", self.skip_intro)
         gf.addRow("When the game starts", self.on_start)
         game_box = QGroupBox("Game")
         game_box.setLayout(gf)
@@ -178,7 +182,7 @@ class SettingsTab(QWidget):
         self.downloads_reset.clicked.connect(lambda: self.downloads.set_text("", emit=True))
         for picker in (self.game, self.docs, self.downloads):
             picker.changed.connect(self.save)
-        for w in (self.high_res,):
+        for w in (self.high_res, self.skip_intro):
             w.toggled.connect(self.save)
         for cb in self.opts.values():
             cb.toggled.connect(self.save)
@@ -225,6 +229,7 @@ class SettingsTab(QWidget):
         self.client.setCurrentIndex(max(self.client.findData(s.client), 0))
         self._fill_languages()
         self.high_res.setChecked(s.high_res)
+        self.skip_intro.setChecked(s.skip_intro)
         self.on_start.setCurrentIndex(max(self.on_start.findData(s.on_game_start), 0))
         for key, cb in self.opts.items():
             cb.setChecked(bool(getattr(s, key)))
@@ -354,6 +359,7 @@ class SettingsTab(QWidget):
         s.client = self.client.currentData()
         s.language = self.language.currentText() or "English"
         s.high_res = self.high_res.isChecked()
+        s.skip_intro = self.skip_intro.isChecked()
         s.on_game_start = self.on_start.currentData()
         for key, cb in self.opts.items():
             setattr(s, key, cb.isChecked())

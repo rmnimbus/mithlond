@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Skip the intro videos** (Settings → Game, on by default): the Turbine logo video no longer plays at every
+  start, and the intro cinematic is marked as seen. Unticking puts the video back.
+- Warns when SELinux blocks Wine/Proton (`selinuxuser_execmod` off, e.g. openSUSE): the game would close
+  seconds after starting. The warning includes the fix.
+- On a computer without any LOTRO documents folder, Mithlond now uses `~/Documents/The Lord of the Rings Online`,
+  so the game doesn't stop at its first-run DirectX prompt.
+
 ## 1.4.3
 
 - **Proton works out of the box.** The AppImage includes umu-run (umu-launcher 1.4.4), so the Proton runners

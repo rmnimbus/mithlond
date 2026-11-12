@@ -444,6 +444,40 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(runner.prefs_args(s), [])
             self.assertEqual(runner.prefs_args(Settings()), [])
 
+    def test_skip_intro(self):
+        from mithlond import runner
+        with tempfile.TemporaryDirectory() as d:
+            game, docs = Path(d) / "game", Path(d) / "docs"
+            logo = game / "raw/en/logo"
+            logo.mkdir(parents=True)
+            (logo / "turbine_logo.bik").write_bytes(b"BIK")
+            (logo / "lotro_ad_pregame.jpg").write_bytes(b"JPG")
+            docs.mkdir()
+            prefs = docs / "UserPreferences.ini"
+            prefs.write_bytes(b"[Launcher]\r\nAllowMultipleInstances=true\r\n\r\n[Misc]\r\nPlayedIntroMovie=False\r\n"
+                              b"Other=1\r\n\r\n[Render]\r\nGraphicsCore=D3D11\r\n")
+            s = Settings(game_dir=str(game), documents_dir=str(docs))
+            self.assertTrue(s.skip_intro)  # on by default
+            notes = runner.apply_intro_skip(s)
+            self.assertFalse((logo / "turbine_logo.bik").exists())
+            self.assertTrue((logo / "turbine_logo.bik.mithlond-skipped").exists())
+            self.assertTrue((logo / "lotro_ad_pregame.jpg").exists())  # only videos
+            self.assertEqual(prefs.read_bytes(), b"[Launcher]\r\nAllowMultipleInstances=true\r\n\r\n[Misc]\r\n"
+                             b"PlayedIntroMovie=True\r\nOther=1\r\n\r\n[Render]\r\nGraphicsCore=D3D11\r\n")
+            self.assertEqual(len(notes), 2)
+            self.assertEqual(runner.apply_intro_skip(s), [])  # nothing left to do
+            (logo / "turbine_logo.bik").write_bytes(b"BIK2")  # a patch restored it
+            runner.apply_intro_skip(s)
+            self.assertEqual((logo / "turbine_logo.bik.mithlond-skipped").read_bytes(), b"BIK2")
+            s.skip_intro = False
+            self.assertEqual(runner.apply_intro_skip(s), ["restored raw/en/logo/turbine_logo.bik"])
+            self.assertTrue((logo / "turbine_logo.bik").exists())
+            # no [Misc] section yet (e.g. freshly seeded settings): appended
+            s.skip_intro = True
+            prefs.write_text("[Render]\nGraphicsCore=D3D11\n")
+            runner.apply_intro_skip(s)
+            self.assertEqual(prefs.read_text(), "[Render]\nGraphicsCore=D3D11\n[Misc]\nPlayedIntroMovie=True\n")
+
     def test_removed_onelauncher_mode_migrates(self):
         from mithlond import config
         s = Settings(runner="onelauncher")

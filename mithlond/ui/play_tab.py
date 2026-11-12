@@ -463,6 +463,8 @@ class PlayTab(QWidget):
             exe = gls.client_executable(game, cfg, s.client)
             args = gls.client_arguments(cfg, sub.name, ws.login_server, ticket, world.chat_server,
                                         s.language, s.high_res) + runner.prefs_args(s)
+            for note in runner.apply_intro_skip(s):  # after prefs_args, which may have just seeded the settings
+                self.ctx.log(f"Intro videos: {note}")
             argv, env = runner.windows_command(s, exe, args, join=self._join)
             argv, env = runner.apply_game_options(s, argv, env)
             if s.opt_gamemode and (gm := runner.gamemode_problem()):

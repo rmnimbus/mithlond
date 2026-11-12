@@ -55,6 +55,7 @@ class Settings:
     client: str = "win64"  # "win64" or "win32"
     language: str = "English"
     high_res: bool = True
+    skip_intro: bool = True  # Turbine logo video every start + the one-time intro cinematic
     on_game_start: str = "stay"  # "stay", "minimize" or "close"
     accounts: list[Account] = field(default_factory=list)
     last_account: str = ""
