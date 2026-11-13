@@ -191,10 +191,19 @@ class Settings:
 
     def prefix_path(self) -> Path:
         if self.wine_prefix:
-            return Path(self.wine_prefix).expanduser()
+            return normalize_prefix(Path(self.wine_prefix).expanduser())
         if self.runner == "umu":
             return HOME / "Games" / "umu" / "umu-default"
         return Path(os.environ.get("WINEPREFIX") or HOME / ".wine")
+
+
+def normalize_prefix(path: Path) -> Path:
+    """The prefix itself when a folder inside it was picked: drive_c (or a folder in drive_c) of a prefix that
+    has its system.reg one level up. Proton would otherwise make a second prefix inside drive_c."""
+    for p in (path, *path.parents):
+        if p.name == "drive_c" and (p.parent / "system.reg").is_file():
+            return p.parent
+    return path
 
 
 def prefix_problem(prefix: Path) -> str | None:
@@ -484,6 +493,11 @@ def best_proton() -> str:
 def autodetect(s: Settings) -> list[str]:
     """Fill in empty settings. Returns a list of human readable notes about what was detected."""
     notes = []
+    if s.wine_prefix:  # a drive_c folder picked as the prefix (seen in a user's setup): use the prefix itself
+        fixed = normalize_prefix(Path(s.wine_prefix).expanduser())
+        if fixed != Path(s.wine_prefix).expanduser():
+            notes.append(f"Prefix: {s.wine_prefix} is the drive_c folder inside a prefix; now using {fixed}")
+            s.wine_prefix = str(fixed)
     if not s.game_dir or not check_game_dir(Path(s.game_dir))[0]:
         dirs = detect_game_dirs()
         if dirs:

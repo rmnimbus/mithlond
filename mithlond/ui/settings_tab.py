@@ -373,6 +373,12 @@ class SettingsTab(QWidget):
         s.check_updates_on_start = self.update_auto.isChecked()
         self.downloads.validate()
         s.wine_prefix = self.prefix.currentText().strip()
+        if s.wine_prefix:
+            fixed = config.normalize_prefix(Path(s.wine_prefix).expanduser())
+            if fixed != Path(s.wine_prefix).expanduser():
+                self.ctx.log(f"Prefix: {s.wine_prefix} is inside a prefix; using the prefix itself, {fixed}")
+                s.wine_prefix = str(fixed)
+                self.prefix.setCurrentText(s.wine_prefix)
         s.extra_env = parse_env(self.env.toPlainText())
         s.client = self.client.currentData()
         s.language = self.language.currentText() or "English"

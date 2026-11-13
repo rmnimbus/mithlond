@@ -1628,6 +1628,27 @@ class SnapAndInstallTests(unittest.TestCase):
                 self.assertTrue(seen)
 
 
+class PrefixNormalizeTests(unittest.TestCase):
+    def test_drive_c_picked_as_prefix(self):
+        from mithlond import config
+        with tempfile.TemporaryDirectory() as d:
+            pfx = Path(d) / "Faugus/lotro"
+            (pfx / "drive_c/Program Files").mkdir(parents=True)
+            (pfx / "system.reg").write_text("x")
+            (pfx / "drive_c/system.reg").write_text("stray prefix made inside drive_c")
+            self.assertEqual(config.normalize_prefix(pfx / "drive_c"), pfx)
+            self.assertEqual(config.normalize_prefix(pfx / "drive_c/Program Files"), pfx)
+            self.assertEqual(config.normalize_prefix(pfx), pfx)
+            other = Path(d) / "drive_c"  # a folder that happens to be called drive_c, not in a prefix
+            other.mkdir()
+            self.assertEqual(config.normalize_prefix(other), other)
+            s = Settings(runner="umu", wine_prefix=str(pfx / "drive_c"))
+            self.assertEqual(s.prefix_path(), pfx)
+            notes = config.autodetect(s)
+            self.assertEqual(s.wine_prefix, str(pfx))
+            self.assertTrue(any("drive_c" in n for n in notes))
+
+
 class DiagnosticsTests(unittest.TestCase):
     def test_redaction(self):
         from mithlond import diagnostics
@@ -1646,6 +1667,10 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Logging in as <account> to Sting", out)
         self.assertIn("~/Games/x", out)
         self.assertIn("Command: <removed", out)
+        long_path = "documents folder: ~/Faugus/lotro/drive_c/users/steamuser/Documents/The Lord of the Rings Online"
+        self.assertIn("/Faugus/lotro/drive_c/users/steamuser/Documents/The Lord", r(long_path))  # paths stay
+        self.assertNotIn("<token>", r("/opt/some/very/long/path/that/goes/on/and/on/forever/and/ever/x"))
+        self.assertIn("<token>", r("key " + "aB3dE5fG7hJ9kL1mN3pQ5rS7tU9vW1xY3zA5bC7dE9/fG1hJ3kL5"))
 
     def test_export_zip(self):
         import zipfile

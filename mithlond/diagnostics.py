@@ -39,7 +39,7 @@ class Redactor:
         t = re.sub(r"(--glsticketdirect|--glsticket|-z)(\s+|=)\S+", r"\1\2<ticket>", t)
         t = re.sub(r"(?<!\S)(-a)(\s+)\S+", r"\1\2<subscription>", t)
         t = re.sub(r"(?i)(ticket[\"']?\s*[:=]\s*[\"']?)[^\s\"'<]+", r"\1<ticket>", t)
-        t = re.sub(r"[A-Za-z0-9+/_-]{40,}={0,2}", "<token>", t)
+        t = re.sub(r"(?<![~/\w])[A-Za-z0-9+/_-]{40,}={0,2}", _token, t)
         t = re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "<email>", t)
         for w in self.words:
             t = re.sub(rf"(?i)\b{re.escape(w)}\b", "<account>", t)
@@ -49,6 +49,15 @@ class Redactor:
 
 
 # ---- helpers ------------------------------------------------------------------------------------------------
+def _token(m: re.Match) -> str:
+    """A long run of letters/digits is a secret unless it's a file path (starts with / or ~/, or its
+    /-separated parts are short words, like ~/Faugus/lotro/drive_c/users/steamuser/Documents/The)."""
+    text = m.group(0)
+    if text.startswith("/") or ("/" in text and all(len(part) <= 24 for part in text.split("/"))):
+        return text
+    return "<token>"
+
+
 def _run(argv: list[str], timeout: float = 10) -> str:
     try:
         r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=_host_env())

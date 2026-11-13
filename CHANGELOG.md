@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Fix: a prefix set to the `drive_c` folder inside a prefix (or a folder in it) is now taken as the prefix
+  itself, at startup and when saving Settings. Before, Proton made a second, empty prefix inside `drive_c`
+  ("Prefix has an invalid version", "unable to use parent for game drive"), so Companion and the game kept
+  their data in the wrong place.
+- Export logs no longer blanks long folder paths as if they were security tokens.
 - **Load plugins** lists only installed plugins. Plugins the game's list still auto-loads but that aren't
   installed any more are named in one line under the list, with **Remove them from the list**.
 - Plugins tab order: Get plugins, Load plugins, Skins, Plugin errors. Music packs sit above Music tools.
