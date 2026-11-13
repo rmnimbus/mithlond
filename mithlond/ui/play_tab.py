@@ -11,11 +11,12 @@ from PySide6.QtWidgets import (
     QProgressBar, QPushButton, QSpinBox, QSplitter, QStyle, QVBoxLayout, QWidget,
 )
 
-from .. import config, gls, keystore, procs, runner
+from .. import config, gameinstall, gls, keystore, procs, runner
 from ..config import Account, check_game_dir
 from .context import AppContext
+from .game_install import install_game
 from .news_panel import NewsPanel
-from .widgets import open_path, subtle
+from .widgets import open_path, open_url, subtle
 from .workers import run_task
 
 
@@ -133,9 +134,15 @@ class PlayTab(QWidget):
         self.official_btn = QPushButton("Official launcher")
         self.official_btn.setToolTip("Run LotroLauncher.exe, e.g. if patching here fails")
         self.folder_btn = QPushButton("Game folder")
+        self.account_btn = QPushButton("My LOTRO account")
+        self.account_btn.setToolTip(f"Open the Standing Stone Games account page in your browser\n"
+                                    f"({gameinstall.ACCOUNT_URL})")
+        self.install_btn = QPushButton("Install the game…")
+        self.install_btn.setToolTip("No game folder yet: download the official installer from lotro.com and "
+                                    "install the game with your Wine/Proton setup")
         tools = QHBoxLayout()
         tools.addStretch()
-        for b in (self.patch_btn, self.official_btn, self.folder_btn):
+        for b in (self.install_btn, self.patch_btn, self.official_btn, self.folder_btn, self.account_btn):
             tools.addWidget(b)
         tools.addStretch()
 
@@ -181,6 +188,10 @@ class PlayTab(QWidget):
         self.password.returnPressed.connect(self._play_clicked)
         self.patch_btn.clicked.connect(self.start_patch)
         self.official_btn.clicked.connect(self.run_official_launcher)
+        self.account_btn.clicked.connect(lambda: open_url(gameinstall.ACCOUNT_URL))
+        self.install_btn.clicked.connect(lambda: install_game(self, self.ctx))
+        self.ctx.settings_changed.connect(self._show_install)
+        self._show_install()
         self.folder_btn.clicked.connect(lambda: self.ctx.settings.game_path and open_path(self.ctx.settings.game_path))
         self.world.currentIndexChanged.connect(self._world_changed)
         ctx.games_changed.connect(self._games_changed)
@@ -602,6 +613,11 @@ class PlayTab(QWidget):
         self.play.setEnabled(True)
         self.ctx.log(f"Patching failed: {e}")
         self._set_busy(False, f"Patching failed: {e}. Try the official launcher.")
+
+    def _show_install(self) -> None:
+        """'Install the game…' only while there's no usable game folder."""
+        s = self.ctx.settings
+        self.install_btn.setVisible(not (s.game_dir and check_game_dir(s.game_path)[0]))
 
     def run_official_launcher(self) -> None:
         s = self.ctx.settings

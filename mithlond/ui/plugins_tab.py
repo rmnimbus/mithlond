@@ -1,5 +1,5 @@
 """Plugins tab: Get plugins (lotrointerface.com), Load plugins (which characters auto-load which plugin, per
-server, with named sets), Plugin errors (the game's Script.log) and Skins."""
+server, with named sets), Skins and Plugin errors (the game's Script.log)."""
 
 from __future__ import annotations
 
@@ -153,8 +153,20 @@ class LoadPluginsPane(QWidget):
                              "when a character enters the world; /plugins load works for anything else."))
         lay.addLayout(row2)
         lay.addWidget(self.table, 1)
+        self.missing = QLabel()
+        self.missing.setWordWrap(True)
+        self.missing.setProperty("subtle", True)
+        self.remove_missing = QPushButton("Remove them from the list")
+        self.remove_missing.setToolTip("Takes them out of the game's auto-load list (press Save afterwards)")
+        self.missing_row = QWidget()
+        mr = QHBoxLayout(self.missing_row)
+        mr.setContentsMargins(0, 0, 0, 0)
+        mr.addWidget(self.missing, 1)
+        mr.addWidget(self.remove_missing)
+        lay.addWidget(self.missing_row)
         lay.addLayout(bottom)
 
+        self.remove_missing.clicked.connect(self._remove_missing)
         self.server.currentIndexChanged.connect(self._server_changed)
         self.add_char.clicked.connect(self._add_character)
         self.load_set.clicked.connect(self._load_set)
@@ -242,31 +254,28 @@ class LoadPluginsPane(QWidget):
         for p in self.plugins:
             if p.name not in unique or (p.package and not unique[p.name].package):
                 unique[p.name] = p
-        installed = set(unique)
-        rows = list(unique.items())
-        rows += [(n, None) for n in self.current if n not in installed]  # set to load but not installed
+        rows = list(unique.items())  # installed plugins only
         self.table.setSortingEnabled(False)
         self.table.setRowCount(0)
         for name, p in rows:
             a = self.current.get(name, Autoload())
-            if p and p.helper and not (a.all or a.characters) and not self.show_helpers.isChecked():
+            if p.helper and not (a.all or a.characters) and not self.show_helpers.isChecked():
                 continue
-            if q and q not in f"{name} {p.package if p else ''} {p.author if p else ''}".lower():
+            if q and q not in f"{name} {p.package} {p.author}".lower():
                 continue
             n = self.table.rowCount()
             self.table.insertRow(n)
             loads = SortItem(a.label(), (0 if a.all else 1 if a.characters else 2, a.label().lower()))
             if len(a.characters) > 1:
                 loads.setToolTip("\n".join(a.characters))
-            vals = [SortItem(name), loads, SortItem(p.package if p else "(not installed)"),
-                    SortItem(p.author if p else ""), SortItem(p.version if p else "")]
+            vals = [SortItem(name), loads, SortItem(p.package), SortItem(p.author), SortItem(p.version)]
             vals[0].setData(Qt.UserRole, name)
-            if p and p.description:
+            if p.description:
                 vals[0].setToolTip(p.description[:400])
             old = self.saved.get(name, Autoload())
             changed = (old.all, sorted(old.characters)) != (a.all, sorted(a.characters))
             for c, it in enumerate(vals):
-                if p is None or (p.helper and c == 0):
+                if p.helper and c == 0:
                     it.setForeground(GREY)
                 if not (a.all or a.characters) and c == 1:
                     it.setForeground(GREY)
@@ -276,7 +285,19 @@ class LoadPluginsPane(QWidget):
                     it.setFont(f)
                 self.table.setItem(n, c, it)
         self.table.setSortingEnabled(True)
+        missing = [n for n, a in self.current.items() if n not in unique and (a.all or a.characters)]
+        self.missing.setText(f"The game's list for this server also auto-loads {len(missing)} plugin"
+                             f"{'s' if len(missing) != 1 else ''} that "
+                             f"{'aren' if len(missing) != 1 else 'isn'}'t installed: {', '.join(sorted(missing))}. "
+                             "The game skips them.")
+        self.missing_row.setVisible(bool(missing))
         self._update_buttons()
+
+    def _remove_missing(self) -> None:
+        unique = {p.name for p in self.plugins}
+        for n in [n for n in self.current if n not in unique]:
+            del self.current[n]
+        self.fill()
 
     def _clicked(self, row: int, _col: int) -> None:
         name = self.table.item(row, 0).data(Qt.UserRole)
@@ -512,8 +533,8 @@ class PluginsTab(QWidget):
         self.skins = AddonPane(ctx, "skin")
         self.tabs.addTab(self.get, "Get plugins")
         self.tabs.addTab(self.load_pane, "Load plugins")
-        self.tabs.addTab(self.errors, "Plugin errors")
         self.tabs.addTab(self.skins, "Skins")
+        self.tabs.addTab(self.errors, "Plugin errors")
         lay = QVBoxLayout(self)
         lay.addWidget(self.tabs)
         self._loaded: set[AddonPane] = set()

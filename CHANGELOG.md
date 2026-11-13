@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **Load plugins** lists only installed plugins. Plugins the game's list still auto-loads but that aren't
+  installed any more are named in one line under the list, with **Remove them from the list**.
+- Plugins tab order: Get plugins, Load plugins, Skins, Plugin errors. Music packs sit above Music tools.
+- **Install the game:** with no game folder yet, **Install the game…** (Play tab; also **Install…** in
+  Settings → Locations) downloads the official installer from lotro.com and installs the game silently into
+  the Wine/Proton prefix, then sets the game folder. **Detect** also looks in the configured prefix.
+- **My LOTRO account** button on the Play tab opens the Standing Stone Games account page.
+- **Layouts:** move and resize in steps of 1, 5 or 10 px, and optionally **snap to other windows' edges**
+  (screen edges always snap). Typed pixel values are used exactly. Both choices are remembered.
+
 ## 1.4.14
 
 - **New Key bindings tab:** every key binding in the game, searchable by action or key, with keys that do two

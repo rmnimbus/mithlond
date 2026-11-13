@@ -8,7 +8,7 @@ a search box: typing narrows the page to the settings that match. Fill in **Loca
 
 | Setting | What to put there |
 |---|---|
-| LOTRO game folder | The folder that contains `lotroclient.exe` and `lotro.launcherconfig`. |
+| LOTRO game folder | The folder that contains `lotroclient.exe` and `lotro.launcherconfig`. No game yet? **Install…** (also on the Play tab while no game folder is set) downloads the official installer (`lotrolive.exe`, linked from lotro.com's download page) and installs the game silently into your Wine/Proton prefix, then sets this folder. The rest of the game data downloads with **Check for game updates** on the Play tab. |
 | Game documents folder | Where the game keeps its settings, `Plugins`, `Music`, `PluginData` and `ui/skins`. **Choose…** lists every LOTRO documents folder on the computer (your home Documents and each Wine/Proton prefix) with when it was last played and how many plugins and songs it has, and can also make a new one. With **Start the game with this folder** ticked (the default), Mithlond starts the game with `--prefs <folder>\UserPreferences.ini`, so the game uses this folder whatever the prefix. If the folder has no game settings yet, Mithlond copies them from the prefix (or writes DirectX 11 defaults), so the game doesn't stop at its first-run graphics prompt. |
 | Downloads folder | Usually empty, meaning `<documents>/Downloads`. LotRO Companion, Maestro and WAN Songbook Filler get downloaded here. |
 
@@ -73,6 +73,7 @@ high-resolution textures, and whether the launcher minimizes when the game start
   **PLAY ANOTHER** and starts a second client (for multiboxing or band play).
 - **STOP:** closes every LOTRO client, LotRO Companion, the official launcher and patcher, Maestro and WAN
   Songbook Filler. That includes copies started outside Mithlond.
+- **My LOTRO account** opens the Standing Stone Games account page (myaccount.standingstonegames.com) in your browser.
 - **Check for game updates:** runs the game's own patcher. **Official launcher:** starts `LotroLauncher.exe`,
   for example if patching here fails.
 - **News:** the official launcher feed. This week's coupon code is shown at the top, with a **Copy code**
@@ -135,6 +136,9 @@ and press **Reload**.
   to the screen edges. The list on the left picks which windows are drawn: by default what you see while
   playing (chat, vitals, target, minimap, quest tracker, quickslot bars, bags, fellowship members); **Show all**
   and **Show none** apply to the windows listed, and the search finds any of the ~160 windows.
+- **Move in steps of** 1 px (free), 5 px or 10 px: dragging and resizing with the mouse goes in those steps
+  (typed pixel values are used exactly). **Snap to other windows**: while dragging, a window's edges snap to the
+  edges of the other windows shown, as they always do to the screen edges. Both are remembered.
 - **Interface options:** the layout's ~190 options (accepting duels/trades/invites, per-window UI scales,
   show/hide toggles, toolbar slots, quest guide colors…) in categories with search.
   `/ui layout load` sets these options as well as the window positions (checked in game with
@@ -196,7 +200,7 @@ occlusion) were read by the game and kept when it rewrote the file.
 
 ## Plugins
 
-Four pages: **Get plugins**, **Load plugins**, **Plugin errors** and **Skins**.
+Four pages: **Get plugins**, **Load plugins**, **Skins** and **Plugin errors**.
 
 ### Get plugins (and Skins)
 
@@ -227,9 +231,10 @@ Plugins installed by hand or with LOTRO Plugin Compendium are picked up automati
 Which plugins the game loads by itself, and for which characters. The game keeps one list per account and
 server (`PluginData/<account>/<server>/PluginOptions.xml`), so pick the **Server** first.
 
-- Every installed plugin is listed, plus plugins the list still loads but that aren't installed any more (grey).
-  **Loads on** says *All characters*, a character's name, *Multiple characters (n)* (hover for the names) or
+- Every installed plugin is listed. **Loads on** says *All characters*, a character's name, *Multiple characters (n)* (hover for the names) or
   *Not loaded*.
+- If the game's list still auto-loads plugins that aren't installed any more, a line under the list names
+  them (the game skips them); **Remove them from the list** takes them out (then **Save**).
 - Click a plugin to open its menu: tick **All characters**, or tick the characters that should load it.
   Ticking a character unticks *All characters* and the other way round. Untick everything for *Not loaded*.
 - Characters are known once they've loaded a plugin on this computer (their `PluginData` folder) or appear in
@@ -276,7 +281,7 @@ The note under each tool shows the latest release and how old it is.
 
 ### Music packs
 
-Below the music tools, also closed by default: song collections from lotrointerface.com, with the same search,
+Above the music tools, also closed by default: song collections from lotrointerface.com, with the same search,
 install, update and uninstall as **Plugins → Get plugins**. The list is loaded the first time you open it.
 
 ## LotRO Companion

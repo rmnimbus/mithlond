@@ -20,7 +20,38 @@ from .context import AppContext
 from .widgets import SectionedPage, subtle
 
 GRIP = 14  # resize handle size in screen pixels
-SNAP = 10  # snap to the screen edges within this many pixels
+SNAP = 10  # snap to an edge within this many pixels
+GRIDS = (1, 5, 10)
+
+
+def snap_axis(start: float, size: float, limit: float, targets: list[float], grid: int,
+              dist: float = SNAP) -> float:
+    """Where a window's start edge goes on one axis while it's dragged.
+
+    Snaps either edge (start or start+size) to the nearest target edge within `dist` (the screen edges are
+    always targets); otherwise rounds to the grid. Always stays on the screen."""
+    best, best_d = None, dist + 0.001
+    for t in [0.0, float(limit)] + list(targets):
+        for cand in (t, t - size):  # our start on the edge, or our end on it
+            d = abs(start - cand)
+            if d < best_d:
+                best, best_d = cand, d
+    pos = best if best is not None else round(start / grid) * grid
+    return float(round(min(max(pos, 0), limit - size)))
+
+
+def snap_size(start: float, size: float, limit: float, targets: list[float], grid: int, minimum: float,
+              dist: float = SNAP) -> float:
+    """A window's size while its corner is dragged: its end edge snaps to a target edge within `dist`,
+    otherwise the end edge is rounded to the grid."""
+    end = start + size
+    best, best_d = None, dist + 0.001
+    for t in [float(limit)] + list(targets):
+        d = abs(end - t)
+        if d < best_d and t - start >= minimum:
+            best, best_d = t, d
+    end = best if best is not None else round(end / grid) * grid
+    return float(round(min(max(end - start, minimum), limit - start)))
 
 
 def game_resolution(s: Settings, fallback: tuple[int, int]) -> tuple[int, int]:
@@ -46,8 +77,9 @@ def changes(a: uilayout.Layout, b: uilayout.Layout) -> int:
 class WindowItem(QGraphicsRectItem):
     """A window on the canvas: drag to move, drag the bottom-right corner to resize."""
 
-    def __init__(self, win: uilayout.Window, screen: tuple[int, int], moved):
+    def __init__(self, win: uilayout.Window, screen: tuple[int, int], moved, options=None):
         self.win, self.sw, self.sh, self.moved = win, screen[0], screen[1], moved
+        self.options = options  # the editor: .grid (1/5/10) and .snap_windows
         super().__init__(0, 0, max(win.w * self.sw, GRIP), max(win.h * self.sh, GRIP))
         self.setPos(win.x * self.sw, win.y * self.sh)
         self.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsSelectable |
@@ -61,7 +93,8 @@ class WindowItem(QGraphicsRectItem):
         f.setPixelSize(max(10, int(self.sh / 70)))
         self.label.setFont(f)
         self.label.setPos(4, 2)
-        self._resizing = False
+        self._resizing = self._dragging = False
+        self._targets: tuple[list[float], list[float]] = ([], [])
         self._fit_label()
 
     def _fit_label(self) -> None:
@@ -75,14 +108,33 @@ class WindowItem(QGraphicsRectItem):
     def hoverMoveEvent(self, e):
         self.setCursor(Qt.SizeFDiagCursor if self._grip(e.pos()) else Qt.SizeAllCursor)
 
+    def _grid(self) -> int:
+        return getattr(self.options, "grid", 1) or 1
+
+    def _edges(self) -> tuple[list[float], list[float]]:
+        """Left/right and top/bottom edges of the other windows shown, if snapping to windows is on."""
+        xs: list[float] = []
+        ys: list[float] = []
+        if self.scene() is None or not getattr(self.options, "snap_windows", False):
+            return xs, ys
+        for it in self.scene().items():
+            if isinstance(it, WindowItem) and it is not self and it.isVisible():
+                xs += [it.pos().x(), it.pos().x() + it.rect().width()]
+                ys += [it.pos().y(), it.pos().y() + it.rect().height()]
+        return xs, ys
+
     def mousePressEvent(self, e):
         self._resizing = self._grip(e.pos())
+        self._dragging = not self._resizing  # snapping applies to mouse drags, not to typed pixel values
+        self._targets = self._edges()  # other windows don't move during this drag
         super().mousePressEvent(e)
 
     def mouseMoveEvent(self, e):
         if self._resizing:
-            w = max(GRIP * 2, min(e.pos().x(), self.sw - self.pos().x()))
-            h = max(GRIP * 2, min(e.pos().y(), self.sh - self.pos().y()))
+            xs, ys = getattr(self, "_targets", ([], []))
+            g = self._grid()
+            w = snap_size(self.pos().x(), e.pos().x(), self.sw, xs, g, GRIP * 2)
+            h = snap_size(self.pos().y(), e.pos().y(), self.sh, ys, g, GRIP * 2)
             self.setRect(0, 0, w, h)
             self._fit_label()
             self._store()
@@ -90,18 +142,20 @@ class WindowItem(QGraphicsRectItem):
             super().mouseMoveEvent(e)
 
     def mouseReleaseEvent(self, e):
-        self._resizing = False
+        self._resizing = self._dragging = False
         super().mouseReleaseEvent(e)
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemPositionChange:
             r = self.rect()
-            x = min(max(value.x(), 0), self.sw - r.width())
-            y = min(max(value.y(), 0), self.sh - r.height())
-            x = 0 if x < SNAP else (self.sw - r.width() if x > self.sw - r.width() - SNAP else x)
-            y = 0 if y < SNAP else (self.sh - r.height() if y > self.sh - r.height() - SNAP else y)
-            value.setX(round(x))
-            value.setY(round(y))
+            if getattr(self, "_dragging", False):
+                xs, ys = self._targets
+                g = self._grid()
+                value.setX(snap_axis(value.x(), r.width(), self.sw, xs, g))
+                value.setY(snap_axis(value.y(), r.height(), self.sh, ys, g))
+            else:  # typed values: exactly as typed, kept on the screen
+                value.setX(round(min(max(value.x(), 0), self.sw - r.width())))
+                value.setY(round(min(max(value.y(), 0), self.sh - r.height())))
             return value
         if change == QGraphicsItem.ItemPositionHasChanged:
             self._store()
@@ -148,6 +202,17 @@ class WindowsEditor(QWidget):
         self.list = QListWidget()
         self.canvas = Canvas()
         self.sel_name = QLabel("Click a window on the screen or in the list.")
+        self.grid = 1
+        self.snap_windows = False
+        self.grid_box = QComboBox()
+        for g in GRIDS:
+            self.grid_box.addItem("1 px (free)" if g == 1 else f"{g} px", g)
+        self.grid_box.setToolTip("Moving and resizing with the mouse goes in steps of this many pixels")
+        self.snap_box = QCheckBox("Snap to other windows")
+        self.snap_box.setToolTip("While dragging, edges snap to the edges of the other windows shown\n"
+                                 "(they always snap to the screen edges)")
+        self.grid_box.currentIndexChanged.connect(lambda _i: setattr(self, "grid", self.grid_box.currentData()))
+        self.snap_box.toggled.connect(lambda on: setattr(self, "snap_windows", on))
         self.px = {k: QSpinBox() for k in ("X", "Y", "Width", "Height")}
         for sb in self.px.values():
             sb.setRange(0, 16000)
@@ -175,10 +240,16 @@ class WindowsEditor(QWidget):
         btns.addWidget(self.none_btn)
         lv.addLayout(btns)
         lv.addWidget(subtle("Ticked windows are shown on the screen. Drag to move, drag the bottom-right corner to "
-                            "resize; windows snap to the screen edges."))
+                            "resize; windows snap to the screen edges (and to each other, if ticked above the screen)."))
         right = QWidget()
         rv = QVBoxLayout(right)
         rv.setContentsMargins(0, 0, 0, 0)
+        snap_row = QHBoxLayout()
+        snap_row.addWidget(QLabel("Move in steps of"))
+        snap_row.addWidget(self.grid_box)
+        snap_row.addWidget(self.snap_box)
+        snap_row.addStretch()
+        rv.addLayout(snap_row)
         rv.addWidget(self.canvas, 1)
         rv.addLayout(geo)
         split = QSplitter()
@@ -215,7 +286,7 @@ class WindowsEditor(QWidget):
             it.setFlags(it.flags() | Qt.ItemIsUserCheckable)
             it.setCheckState(Qt.Checked if win.core else Qt.Unchecked)
             self.list.addItem(it)
-            item = WindowItem(win, screen, self._moved)
+            item = WindowItem(win, screen, self._moved, self)
             item.setVisible(win.core)
             scene.addItem(item)
             self.items[win.id] = item
@@ -367,6 +438,11 @@ class LayoutTab(QWidget):
 
         self.windows = WindowsEditor()
         self.windows.changed.connect(self._changed)
+        s = ctx.settings  # remembered: steps and snapping
+        self.windows.grid_box.setCurrentIndex(max(self.windows.grid_box.findData(s.layout_grid), 0))
+        self.windows.snap_box.setChecked(s.layout_snap_windows)
+        self.windows.grid_box.currentIndexChanged.connect(lambda _i: self._save_snap())
+        self.windows.snap_box.toggled.connect(lambda _on: self._save_snap())
         self.options_page = SectionedPage("Search interface options, e.g. scale, duel, toolbar…", counts=True)
         self.chat_page = SectionedPage("Search chat types, e.g. tell, kinship, loot…", counts=True)
         self.sub = QTabWidget()
@@ -403,6 +479,11 @@ class LayoutTab(QWidget):
         self.refresh()
 
     # ---- files ------------------------------------------------------------------------------------
+    def _save_snap(self) -> None:
+        self.ctx.settings.layout_grid = self.windows.grid
+        self.ctx.settings.layout_snap_windows = self.windows.snap_windows
+        self.ctx.settings.save()
+
     def _dir(self) -> Path:
         docs = self.ctx.settings.docs_path
         return uilayout.layouts_dir(docs) if docs else Path.home()

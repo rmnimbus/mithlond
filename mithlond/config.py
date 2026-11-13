@@ -123,6 +123,10 @@ class Settings:
     check_updates_on_start: bool = True
     skipped_version: str = ""  # "Skip this version" on the update banner
 
+    # Layouts tab: mouse moves in steps of 1/5/10 px; snap to other windows' edges
+    layout_grid: int = 1
+    layout_snap_windows: bool = False
+
     # Plugins: characters added by hand on Plugins → Load plugins, per "<account>/<server>"
     known_characters: dict[str, list[str]] = field(default_factory=dict)
 
@@ -287,19 +291,23 @@ def faugus_lotro() -> dict | None:
     return max(lotro, key=lambda g: str(g.get("last_played", "")), default=None)
 
 
-def detect_game_dirs() -> list[Path]:
+# Where the official installer puts the game inside a Wine prefix.
+GAME_SUBDIRS = (
+    "drive_c/Program Files (x86)/StandingStoneGames/The Lord of the Rings Online",
+    "drive_c/Program Files/StandingStoneGames/The Lord of the Rings Online",
+    "drive_c/Program Files (x86)/Turbine/The Lord of the Rings Online",
+)
+
+
+def detect_game_dirs(extra_prefixes: list[Path] = ()) -> list[Path]:
     cands: list[Path] = []
     for g in _faugus_games():
         exe = str(g.get("path", ""))
         if exe.lower().endswith(("lotrolauncher.exe", "lotroclient.exe")):
             cands.append(Path(exe).parent)
-    prefixes = [HOME / ".wine"] + [Path(g["prefix"]) for g in _faugus_games() if g.get("prefix")]
+    prefixes = list(extra_prefixes) + [HOME / ".wine"] + [Path(g["prefix"]) for g in _faugus_games() if g.get("prefix")]
     for pfx in prefixes:
-        for sub in (
-            "drive_c/Program Files (x86)/StandingStoneGames/The Lord of the Rings Online",
-            "drive_c/Program Files/StandingStoneGames/The Lord of the Rings Online",
-            "drive_c/Program Files (x86)/Turbine/The Lord of the Rings Online",
-        ):
+        for sub in GAME_SUBDIRS:
             cands.append(pfx / sub)
     for steam in (HOME / ".local/share/Steam", HOME / ".steam/steam"):
         cands.append(steam / "steamapps/common/Lord of the Rings Online")

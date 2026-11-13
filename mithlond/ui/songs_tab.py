@@ -102,15 +102,15 @@ class SongsTab(QWidget):
         }
         for row in self.tool_rows.values():
             tl.addWidget(row)
-        self.tools_section = Collapsible("Music tools (Maestro, BruTE, WAN Songbook Filler)", tools_body)
-        lay.addWidget(self.tools_section)
-
         self.packs = AddonPane(ctx, "music")
         self.packs.setMinimumHeight(380)
         self.packs_section = Collapsible("Music packs (song collections from lotrointerface.com)", self.packs)
         self.packs_section.toggle.toggled.connect(self._packs_opened)
         lay.addWidget(self.packs_section)
         self._packs_loaded = False
+
+        self.tools_section = Collapsible("Music tools (Maestro, BruTE, WAN Songbook Filler)", tools_body)
+        lay.addWidget(self.tools_section)
 
         self.import_files.clicked.connect(self._pick_files)
         self.import_dir.clicked.connect(self._pick_dir)

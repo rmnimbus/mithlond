@@ -1493,12 +1493,13 @@ class PluginsAndKeysUITests(unittest.TestCase):
             with mock.patch("mithlond.procs.game_clients", return_value=[]):
                 tab = PluginsTab(ctx)
                 titles = [tab.tabs.tabText(i) for i in range(tab.tabs.count())]
-                self.assertEqual(titles, ["Get plugins", "Load plugins", "Plugin errors", "Skins"])
+                self.assertEqual(titles, ["Get plugins", "Load plugins", "Skins", "Plugin errors"])
                 lp = tab.load_pane
                 self.assertEqual(lp.server.currentText(), "Sting")
                 rows = {lp.table.item(r, 0).text(): lp.table.item(r, 1).text() for r in range(lp.table.rowCount())}
-                self.assertEqual(rows, {"Wallet": "All characters", "Deed Tracker": "Not loaded",
-                                        "MinstrelBuff II": "Realmonster"})  # not installed but listed
+                self.assertEqual(rows, {"Wallet": "All characters", "Deed Tracker": "Not loaded"})  # installed only
+                self.assertFalse(lp.missing_row.isHidden())  # MinstrelBuff II: in the game's list, not installed
+                self.assertIn("MinstrelBuff II", lp.missing.text())
                 self.assertEqual(lp.characters(), ["Foamdisk", "Realmonster"])
                 popup = CharacterPopup(lp, lp.characters(), pl.Autoload(True), lambda a: None)
                 popup.boxes["Foamdisk"].setChecked(True)
@@ -1521,7 +1522,10 @@ class PluginsAndKeysUITests(unittest.TestCase):
                     lp.current["Wallet"] = pl.Autoload()
                     lp._check_game()
                     self.assertFalse(lp.save_btn.isEnabled())  # never while the game runs
-                tab.tabs.setCurrentIndex(2)
+                lp.remove_missing.click()
+                self.assertNotIn("MinstrelBuff II", lp.current)
+                self.assertTrue(lp.missing_row.isHidden())
+                tab.tabs.setCurrentIndex(3)
                 tab.errors.refresh()
                 self.assertEqual(tab.errors.table.rowCount(), 1)
                 self.assertEqual(tab.errors.table.item(0, 0).text(), "Garan")
@@ -1565,6 +1569,8 @@ class PluginsAndKeysUITests(unittest.TestCase):
                 self.assertTrue(tab.restore_btn.isEnabled())
                 tab.deleteLater()
             mt = SongsTab(ctx)
+            lay = mt.layout()
+            self.assertLess(lay.indexOf(mt.packs_section), lay.indexOf(mt.tools_section))  # packs above tools
             self.assertFalse(mt.packs_section.toggle.isChecked())  # music packs: collapsed, not loaded
             self.assertFalse(mt._packs_loaded)
             with mock.patch.object(mt.packs, "load") as load:
@@ -1574,6 +1580,52 @@ class PluginsAndKeysUITests(unittest.TestCase):
                 load.assert_called_once()
             mt.deleteLater()
             app.processEvents()
+
+
+class SnapAndInstallTests(unittest.TestCase):
+    def test_snap_axis_and_size(self):
+        from mithlond.ui.layout_tab import snap_axis, snap_size
+        self.assertEqual(snap_axis(123, 100, 1920, [], 1), 123)
+        self.assertEqual(snap_axis(123, 100, 1920, [], 5), 125)
+        self.assertEqual(snap_axis(123, 100, 1920, [], 10), 120)
+        self.assertEqual(snap_axis(6, 100, 1920, [], 10), 0)          # screen edge
+        self.assertEqual(snap_axis(1815, 100, 1920, [], 1), 1820)     # right edge
+        self.assertEqual(snap_axis(5000, 100, 1920, [], 1), 1820)     # stays on screen
+        self.assertEqual(snap_axis(504, 100, 1920, [500, 800], 10), 500)  # our left onto their left
+        self.assertEqual(snap_axis(396, 100, 1920, [500, 800], 1), 400)   # our right onto their left
+        self.assertEqual(snap_axis(455, 100, 1920, [500, 800], 1), 455)   # nothing near
+        self.assertEqual(snap_size(100, 203, 1920, [], 5, 28), 205)
+        self.assertEqual(snap_size(100, 396, 1920, [500], 10, 28), 400)   # end onto another window's edge
+        self.assertEqual(snap_size(100, 5, 1920, [], 1, 28), 28)          # minimum size
+        self.assertEqual(snap_size(1800, 500, 1920, [], 1, 28), 120)      # stays on screen
+
+    def test_installer_detection_and_download_check(self):
+        from mithlond import gameinstall
+        with tempfile.TemporaryDirectory() as d:
+            pfx = Path(d) / "pfx"
+            self.assertEqual(gameinstall.installed_in(pfx), [])
+            g = pfx / "drive_c/Program Files (x86)/StandingStoneGames/The Lord of the Rings Online"
+            g.mkdir(parents=True)
+            (g / "LotroLauncher.exe").write_bytes(b"MZ")
+            self.assertEqual(gameinstall.installed_in(pfx), [g])  # launcher only: still found
+            self.assertIn("/DIR=C:\\Program Files (x86)\\StandingStoneGames\\The Lord of the Rings Online",
+                          gameinstall.SILENT_ARGS)
+
+            class Resp:
+                def __init__(self, body): self.body, self.headers = body, {"Content-Length": str(len(body))}
+                def __enter__(self): return self
+                def __exit__(self, *a): return False
+                def raise_for_status(self): pass
+                def iter_content(self, n): yield self.body
+            dest = Path(d) / "lotrolive.exe"
+            with mock.patch("requests.get", return_value=Resp(b"<html>not it</html>")):
+                with self.assertRaises(gameinstall.InstallError):
+                    gameinstall.download(dest=dest)
+            self.assertFalse(dest.exists())
+            with mock.patch("requests.get", return_value=Resp(b"MZ" + b"\0" * 1_200_000)):
+                seen = []
+                self.assertEqual(gameinstall.download(lambda a, b: seen.append(a), dest=dest), dest)
+                self.assertTrue(seen)
 
 
 class DiagnosticsTests(unittest.TestCase):

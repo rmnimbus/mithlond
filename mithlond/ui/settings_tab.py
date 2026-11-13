@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from .. import config, runner
 from .context import AppContext
+from .game_install import install_game
 from .widgets import PathPicker, SectionedPage, subtle
 
 
@@ -51,6 +52,9 @@ class SettingsTab(QWidget):
         # --- locations
         self.game = PathPicker(validator=config.check_game_dir, placeholder="Folder that contains lotroclient.exe")
         self.game_detect = QPushButton("Detect")
+        self.game_install = QPushButton("Install…")
+        self.game_install.setToolTip("Download the official installer from lotro.com and install the game "
+                                     "with your Wine/Proton setup")
         self.docs = PathPicker(validator=check_docs, placeholder="…/Documents/The Lord of the Rings Online")
         self.docs_choose = QPushButton("Choose…")
         self.docs_choose.setToolTip("Pick from the documents folders found on this computer, or make a new one")
@@ -62,7 +66,7 @@ class SettingsTab(QWidget):
         self.downloads_reset = QPushButton("Default")
         self.downloads_reset.setToolTip("Use the Downloads folder inside the documents folder")
         loc = QFormLayout()
-        loc.addRow("LOTRO game folder", self._with(self.game, self.game_detect))
+        loc.addRow("LOTRO game folder", self._with(self.game, self.game_detect, self.game_install))
         loc.addRow("Game documents\nfolder", self._with(self.docs, self.docs_choose))
         loc.addRow("", self.use_prefs)
         loc.addRow("", subtle("Holds your game settings, Plugins, Music, PluginData and ui/skins. With the box ticked "
@@ -208,6 +212,7 @@ class SettingsTab(QWidget):
         self.env.textChanged.connect(self._env_timer.start)
         self._env_timer.timeout.connect(self.save)
         self.game_detect.clicked.connect(self.detect_game)
+        self.game_install.clicked.connect(lambda: install_game(self, self.ctx))
         self.docs_choose.clicked.connect(self.choose_docs)
         self.use_prefs.toggled.connect(self.save)
         self.update_auto.toggled.connect(self.save)
@@ -220,12 +225,13 @@ class SettingsTab(QWidget):
         return True, "Exists" if p.is_dir() else "Will be created on the first download"
 
     @staticmethod
-    def _with(w: QWidget, btn: QPushButton) -> QWidget:
+    def _with(w: QWidget, *btns: QPushButton) -> QWidget:
         box = QWidget()
         h = QHBoxLayout(box)
         h.setContentsMargins(0, 0, 0, 0)
         h.addWidget(w, 1)
-        h.addWidget(btn)
+        for b in btns:
+            h.addWidget(b)
         return box
 
     def load_values(self) -> None:
@@ -381,7 +387,7 @@ class SettingsTab(QWidget):
         self.ctx.save()
 
     def detect_game(self) -> None:
-        found = config.detect_game_dirs()
+        found = config.detect_game_dirs([self.ctx.settings.prefix_path()])
         if not found:
             QMessageBox.information(self, "Detect", "No LOTRO install found automatically. Use Browse… to pick the "
                                     "folder that contains lotroclient.exe.")
