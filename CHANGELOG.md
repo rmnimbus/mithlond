@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.11
+
+- **Presets:** In game settings has a **Graphics preset** list (Very Low … Very High) that fills in the game's
+  graphics settings as unsaved changes; Visual effects has an **Effects preset** list that sets upscaling,
+  sharpening, antialiasing and DXVK options for slower to faster computers. Both were checked with real game
+  starts: the game kept every preset value, and the effects loaded.
+- In game settings: the lists for draw distances, shadows, water, reflections and grass now offer the game's real
+  lowest value (*Disabled* or *Low*) instead of a *VeryLow* the game doesn't accept.
+- Fix: vkBasalt effects didn't apply when the game ran in gamescope (gamescope clears `ENABLE_VKBASALT`; Mithlond
+  now sets it again for the game).
+
 ## 1.4.10
 
 - **Settings, Visual effects and In game settings show one category at a time:** clicking a category in the list

@@ -710,6 +710,14 @@ class GameOptionTests(unittest.TestCase):
                                         "umu-run", "game.exe"])
                 self.assertEqual((env["MANGOHUD"], env["DXVK_HUD"], env["PROTON_ENABLE_WAYLAND"]), ("1", "fps", "1"))
                 self.assertEqual(runner.apply_game_options(Settings(), ["x"], {}), (["x"], {}))
+                # vkBasalt inside gamescope: gamescope clears ENABLE_VKBASALT, so it's set again after '--'
+                with mock.patch("mithlond.effects.vkbasalt_installed", lambda: True), \
+                        mock.patch("mithlond.effects.CONFIG_DIR", Path(d)), \
+                        mock.patch("mithlond.effects.VKBASALT_CONF", Path(d) / "vkb.conf"):
+                    argv, env = runner.apply_game_options(Settings(opt_gamescope=True, vkb_enabled=True),
+                                                          ["umu-run", "game.exe"], {})
+                i = argv.index("--")
+                self.assertEqual(argv[i + 1:i + 3], ["env", "ENABLE_VKBASALT=1"])
             finally:
                 os.environ["PATH"] = old
             os.environ["PATH"] = d + "/nothing"
@@ -991,6 +999,20 @@ class GamePrefsTests(unittest.TestCase):
             self.assertEqual(new.count("\r\n"), SAMPLE_PREFS.count("\r\n"))
             self.assertEqual(g.latest_backup(f), b)
 
+    def test_presets(self):
+        from mithlond import gameprefs as g
+        for name in g.PRESET_NAMES:
+            values = g.preset(name)
+            self.assertTrue(all(k in g.BY_ID for k in values))
+            self.assertFalse([k for k in values if not k.startswith("Render.")])  # display/sound/UI untouched
+            for k, v in values.items():
+                p = g.BY_ID[k]
+                if p.kind == "choice" and not p.editable:
+                    self.assertIn(v, p.choices, k)
+        self.assertEqual(g.preset("Very Low")["Render.TextureDetail"], "VeryLow")
+        self.assertEqual(g.preset("Very High")["Render.ModelDetail"], "UltraHigh")
+        self.assertEqual(g.preset("High", {"Render.TextureDetail": "x"}), {"Render.TextureDetail": "High"})
+
     def test_tab(self):
         from PySide6.QtWidgets import QApplication
         from mithlond import procs
@@ -1038,6 +1060,14 @@ class GamePrefsTests(unittest.TestCase):
             self.assertEqual(vol.current(), "0.10")
             tab.save()
             self.assertIn("ScreenMode=Windowed", (Path(d) / "UserPreferences.ini").read_text())
+            tab._apply_preset(1)  # Very Low: filled in, not saved yet
+            tex = next(f for f in tab.fields if f.pref.id == "Render.TextureDetail")
+            self.assertEqual(tex.current(), "VeryLow")
+            self.assertTrue(tex.label.font().bold())
+            self.assertIn("TextureDetail=VeryHigh", (Path(d) / "UserPreferences.ini").read_text())
+            self.assertEqual(next(f for f in tab.fields if f.pref.id == "Render.ShadowMapQuality").current(), "0")
+            tab.save()
+            self.assertIn("TextureDetail=VeryLow", (Path(d) / "UserPreferences.ini").read_text())
             self.assertTrue(tab.restore_btn.isEnabled())
             with mock.patch.object(procs, "game_clients", lambda: ["game"]):
                 tab._check_game()
@@ -1118,6 +1148,21 @@ class EffectsTests(unittest.TestCase):
         config.autodetect(s)
         self.assertEqual((s.gamescope_args, s.gs_fullscreen), ("", True))
 
+    def test_presets(self):
+        from mithlond import effects
+        s = Settings()
+        v = effects.apply_preset(s, "Very Low", gamescope_installed=True)
+        self.assertEqual((s.opt_gamescope, s.gs_render, s.gs_filter, s.vkb_enabled, s.vkb_cas, s.dxvk_latency),
+                         (True, "performance", "fsr", True, True, 1))
+        self.assertIn("-F", effects.gamescope_args(s, (1920, 1080)))
+        s = Settings()
+        v = effects.apply_preset(s, "Low", gamescope_installed=False)  # no gamescope: no upscaling part
+        self.assertFalse(any(k.startswith("gs_") or k == "opt_gamescope" for k in v))
+        self.assertFalse(s.opt_gamescope)
+        effects.apply_preset(s, "Very High", gamescope_installed=True)
+        self.assertEqual((s.opt_gamescope, s.vkb_smaa, s.vkb_smaa_edge, s.dxvk_aniso), (False, True, "color", 16))
+        self.assertEqual(effects.vkbasalt_effects(s), ["smaa", "cas"])
+
     def test_tab(self):
         from PySide6.QtWidgets import QApplication
         from mithlond.ui.context import AppContext
@@ -1132,6 +1177,11 @@ class EffectsTests(unittest.TestCase):
                           if not tab.page.nav.item(i).isHidden()], ["Upscaling & display"])
         tab.page.search.clear()
         self.assertIn("gamescope -f -- <game>", tab.gs_preview.text())
+        tab.page.select("DXVK")
+        with mock.patch.object(ctx, "save"):
+            tab._apply_preset(4)  # High: applied and saved right away, page rebuilt
+        self.assertEqual((ctx.settings.vkb_smaa, ctx.settings.dxvk_aniso), (True, 16))
+        self.assertEqual(tab.page.sections[tab.page.nav.currentRow()][0], "DXVK")  # same category still open
         tab.deleteLater()
         app.processEvents()
 

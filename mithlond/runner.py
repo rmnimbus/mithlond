@@ -247,6 +247,10 @@ def apply_game_options(s: Settings, argv: list[str], env: dict[str, str],
     wrap: list[str] = []
     if s.opt_gamescope:
         wrap += effects.gamescope_command(s, screen)
+        if env.get("ENABLE_VKBASALT") == "1":
+            # gamescope clears ENABLE_VKBASALT for the programs it starts (seen in a real launch), so it is set
+            # again on the far side of '--' for the game itself.
+            wrap += ["env", "ENABLE_VKBASALT=1"]
     if s.opt_gamemode:
         wrap.append(shutil.which("gamemoderun") or "gamemoderun")
     return wrap + argv, env

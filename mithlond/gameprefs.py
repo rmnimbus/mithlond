@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 QUALITY = ["VeryLow", "Low", "Medium", "High", "VeryHigh", "UltraHigh"]
+QUALITY_FROM_LOW = QUALITY[1:]  # settings whose lowest value is Low (the game turns VeryLow into Low)
+QUALITY_OR_OFF = ["Disabled", *QUALITY[1:]]  # settings that can be turned off (lowest value: Disabled)
 COLORS = ["Default", "White", "Red", "Gold", "Blue", "Yellow", "Green", "Orange", "Magenta", "Turquoise"]
 RESOLUTIONS = ["1280x720", "1280x800", "1366x768", "1440x900", "1600x900", "1680x1050", "1920x1080", "1920x1200",
                "2560x1080", "2560x1440", "2560x1600", "3440x1440", "3840x1600", "3840x2160", "5120x1440"]
@@ -81,15 +83,15 @@ SCHEMA: list[Pref] = [
     _p("Render", "DisplayOutput", "Display output number", I, D, lo=0, hi=8, step=1),
     # ---- Detail
     _p("Render", "TextureDetail", "Texture detail", C, DET, choices=QUALITY),
-    _p("Render", "MaterialDetail", "Material detail", C, DET, choices=QUALITY),
-    _p("Render", "ModelDetail", "Model detail", C, DET, choices=QUALITY),
+    _p("Render", "MaterialDetail", "Material detail", C, DET, choices=QUALITY_FROM_LOW),
+    _p("Render", "ModelDetail", "Model detail", C, DET, choices=QUALITY_FROM_LOW),
     _p("Render", "TextureFiltering", "Texture filtering", C, DET,
        choices=["Bilinear", "Trilinear", "Sharp", "VerySharp", "Anisotropic"]),
     _p("Render", "AnisotropicQuality", "Anisotropic filtering level", C, DET, choices=["1", "2", "4", "8", "16"]),
-    _p("Render", "ObjectDrawDistance", "Object draw distance", C, DET, choices=QUALITY),
+    _p("Render", "ObjectDrawDistance", "Object draw distance", C, DET, choices=QUALITY_FROM_LOW),
     _p("Render", "LandscapeDrawDistance", "Landscape draw distance", C, DET, choices=QUALITY),
-    _p("Render", "LandscapeLightingQuality", "Landscape lighting quality", C, DET, choices=QUALITY),
-    _p("Render", "FrillDistance", "Grass and plants distance", C, DET, choices=QUALITY),
+    _p("Render", "LandscapeLightingQuality", "Landscape lighting quality", C, DET, choices=QUALITY_FROM_LOW),
+    _p("Render", "FrillDistance", "Grass and plants distance", C, DET, choices=QUALITY_OR_OFF),
     _p("Render", "FrillDensity", "Grass and plants density", F, DET, lo=0.0, hi=1.0),
     _p("Render", "FrillTerrainColor", "Grass takes the terrain's color", B, DET),
     _p("Render", "FarLandscapeNormalMaps", "Detailed distant landscape", B, DET),
@@ -103,7 +105,7 @@ SCHEMA: list[Pref] = [
     # ---- Lighting & Effects
     _p("Render", "AmbientOcclusion", "Ambient occlusion", B, FX),
     _p("Render", "AmbientLightBoost", "Ambient light boost", F, FX, lo=0.0, hi=3.0),
-    _p("Render", "AtmosphericsDetail", "Atmospherics detail", C, FX, choices=QUALITY),
+    _p("Render", "AtmosphericsDetail", "Atmospherics detail", C, FX, choices=QUALITY_FROM_LOW),
     _p("Render", "VolumetricLight", "Volumetric light", B, FX),
     _p("Render", "SpecularLighting", "Specular lighting", B, FX),
     _p("Render", "MultiPassLighting", "Multi-pass lighting", B, FX),
@@ -111,18 +113,18 @@ SCHEMA: list[Pref] = [
     _p("Render", "GlowMapping", "Glow mapping", B, FX),
     _p("Render", "OverbrightBloomFilter", "Bloom", B, FX),
     _p("Render", "BloomIntensity", "Bloom intensity", F, FX, lo=0.0, hi=3.0),
-    _p("Render", "BlurFilterQuality", "Blur filter quality", C, FX, choices=QUALITY),
+    _p("Render", "BlurFilterQuality", "Blur filter quality", C, FX, choices=QUALITY_FROM_LOW),
     _p("Render", "VideoPostEffects", "Post-processing effects", B, FX),
     _p("Render", "PrecipitationEffects", "Rain and snow", B, FX),
     _p("Render", "DynamicParticles", "Particle effects shown for", C, FX, choices=["All", "Me + Targets", "Me", "None"]),
-    _p("Render", "InteractiveWater", "Interactive water", C, FX, choices=QUALITY),
-    _p("Render", "LandscapeShoreEffects", "Shore effects", C, FX, choices=QUALITY),
-    _p("Render", "SurfaceReflections", "Surface reflections", C, FX, choices=QUALITY),
+    _p("Render", "InteractiveWater", "Interactive water", C, FX, choices=QUALITY_OR_OFF),
+    _p("Render", "LandscapeShoreEffects", "Shore effects", C, FX, choices=QUALITY_OR_OFF),
+    _p("Render", "SurfaceReflections", "Surface reflections", C, FX, choices=QUALITY_OR_OFF),
     _p("Render", "AlphaToCoverage", "Alpha-to-coverage (smoother foliage edges)", B, FX),
     # ---- Shadows
-    _p("Render", "StencilShadows", "Character shadows", C, SH, choices=QUALITY),
+    _p("Render", "StencilShadows", "Character shadows", C, SH, choices=QUALITY_OR_OFF),
     _p("Render", "ShadowMapQuality", "Shadow map quality", I, SH, lo=0, hi=4, step=1),
-    _p("Render", "LandscapeStaticObjectShadows", "Landscape object shadows", C, SH, choices=QUALITY),
+    _p("Render", "LandscapeStaticObjectShadows", "Landscape object shadows", C, SH, choices=QUALITY_OR_OFF),
     _p("Render", "EnvironmentStencilShadows", "Environment shadows", B, SH),
     _p("Render", "BlobShadows", "Simple (blob) shadows", B, SH),
     # ---- Sound
@@ -317,3 +319,66 @@ def save(path: Path, changes: dict[str, str]) -> Path | None:
         section, key = ident.split(".", 1)
         set_preference(path, section, key, value)
     return b
+
+
+# ---- presets -------------------------------------------------------------------------------------------
+PRESET_NAMES = ["Very Low", "Low", "Medium", "High", "Very High"]
+
+
+def _ladder(top: str, lowest: str = "VeryLow") -> list[str]:
+    """Quality values for the five presets: the setting's lowest accepted value (VeryLow, Low or Disabled), then
+    Low, Medium, one below the top, and the top (High, VeryHigh or UltraHigh)."""
+    i = QUALITY.index(top)
+    return [lowest, "Low", "Medium", QUALITY[i - 1], top]
+
+
+# Very Low → Very High. Highest values as the game writes them at its own maximum settings. Display, sound,
+# interface and controls are never touched by a preset.
+PRESETS: dict[str, list] = {
+    # quality lists
+    "Render.TextureDetail": _ladder("VeryHigh"),
+    "Render.MaterialDetail": ["Low", "Low", "Medium", "High", "High"],
+    "Render.ModelDetail": _ladder("UltraHigh", "Low"),
+    "Render.ObjectDrawDistance": _ladder("UltraHigh", "Low"),
+    "Render.LandscapeDrawDistance": _ladder("VeryHigh"),
+    "Render.LandscapeLightingQuality": _ladder("VeryHigh", "Low"),
+    "Render.FrillDistance": _ladder("UltraHigh", "Disabled"),
+    "Render.AtmosphericsDetail": ["Low", "Low", "Medium", "High", "High"],
+    "Render.BlurFilterQuality": ["Low", "Low", "Medium", "High", "High"],
+    "Render.InteractiveWater": ["Disabled", "Low", "Medium", "High", "High"],
+    "Render.LandscapeShoreEffects": ["Disabled", "Low", "Medium", "High", "High"],
+    "Render.SurfaceReflections": _ladder("UltraHigh", "Disabled"),
+    "Render.StencilShadows": _ladder("UltraHigh", "Disabled"),
+    "Render.LandscapeStaticObjectShadows": ["Disabled", "Low", "Medium", "High", "High"],
+    "Render.TextureFiltering": ["Bilinear", "Trilinear", "Anisotropic", "Anisotropic", "Anisotropic"],
+    "Render.AnisotropicQuality": ["1", "2", "4", "8", "16"],
+    "Render.DynamicParticles": ["Me + Targets", "Me + Targets", "All", "All", "All"],
+    # numbers
+    "Render.ShadowMapQuality": ["0", "1", "2", "3", "3"],
+    "Render.FrillDensity": ["0.00", "0.25", "0.50", "0.75", "1.00"],
+    "Render.PlayerCrowdQuality": ["0.25", "0.50", "0.75", "1.00", "1.00"],
+    # effects that switch on as the preset goes up
+    "Render.BlobShadows": ["True"] * 5,
+    "Render.DistantImposters": ["True"] * 5,
+    "Render.MeshCombining": ["True"] * 5,
+    "Render.StaticEnvironmentalObjects": ["False", "True", "True", "True", "True"],
+    "Render.PrecipitationEffects": ["False", "True", "True", "True", "True"],
+    "Render.SpecularLighting": ["False", "True", "True", "True", "True"],
+    "Render.GlowMapping": ["False", "False", "True", "True", "True"],
+    "Render.OverbrightBloomFilter": ["False", "False", "True", "True", "True"],
+    "Render.VideoPostEffects": ["False", "False", "True", "True", "True"],
+    "Render.MultiPassLighting": ["False", "False", "True", "True", "True"],
+    "Render.FrillTerrainColor": ["False", "False", "True", "True", "True"],
+    "Render.AmbientOcclusion": ["False", "False", "False", "True", "True"],
+    "Render.VolumetricLight": ["False", "False", "False", "True", "True"],
+    "Render.FarLandscapeNormalMaps": ["False", "False", "False", "True", "True"],
+    "Render.EnvironmentStencilShadows": ["False", "False", "False", "True", "True"],
+    "Render.PerPixelLightingAttenuation": ["False", "False", "False", "False", "True"],
+    "Render.AlphaToCoverage": ["False", "False", "False", "False", "True"],
+}
+
+
+def preset(name: str, present: dict[str, str] | None = None) -> dict[str, str]:
+    """`Section.Key` → value for a preset. With `present`, only settings that exist in that file."""
+    i = PRESET_NAMES.index(name)
+    return {k: v[i] for k, v in PRESETS.items() if present is None or k in present}

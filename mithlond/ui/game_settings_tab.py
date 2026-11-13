@@ -78,6 +78,28 @@ class Field:
         self.label = QLabel(p.label)
         self.label.setToolTip(w.toolTip())
 
+    def set_value(self, value: str) -> None:
+        """Show `value` (as written in the file) in the widget, e.g. from a preset."""
+        p, w = self.pref, self.widget
+        if p.kind == "bool":
+            w.setChecked(value.lower() == "true")
+        elif p.kind == "choice":
+            i = w.findData(value)
+            if i < 0:
+                w.addItem(value if p.editable else gameprefs.pretty(value), value)
+                i = w.count() - 1
+            w.setCurrentIndex(i)
+        elif p.kind in ("float", "int"):
+            num = _num(value)
+            if num < w.minimum() or num > w.maximum():
+                w.setRange(min(w.minimum(), int(num) if p.kind == "int" else num),
+                           max(w.maximum(), int(num) if p.kind == "int" else num))
+            w.setValue(int(num) if p.kind == "int" else num)
+        elif p.kind == "volume":
+            self.slider.setValue(round(_num(value) * 100))
+        else:
+            w.setText(value)
+
     def current(self) -> str:
         p, w = self.pref, self.widget
         if p.kind == "bool":
@@ -147,8 +169,18 @@ class GameSettingsTab(QWidget):
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.groups: dict[str, tuple[QGroupBox, QFormLayout, list[Field]]] = {}
+        self.preset = QComboBox()
+        self.preset.addItem("Graphics preset…")
+        self.preset.addItems(gameprefs.PRESET_NAMES)
+        self.preset.setToolTip("Fills in the graphics settings (detail, effects, shadows, draw distance) for slower to\n"
+                               "faster computers. Your resolution, window mode, sound, interface and controls stay as\n"
+                               "they are. Nothing is written until you press Save changes.")
+        self.preset.activated.connect(self._apply_preset)
+        top = QHBoxLayout()
+        top.addWidget(self.search, 1)
+        top.addWidget(self.preset)
         right = QVBoxLayout()
-        right.addWidget(self.search)
+        right.addLayout(top)
         right.addWidget(self.no_match)
         right.addWidget(self.scroll, 1)
         body = QHBoxLayout()
@@ -249,6 +281,25 @@ class GameSettingsTab(QWidget):
         self.no_match.setVisible(bool(words) and total == 0)
         select_first_visible(self.nav)
         self._show_current()
+
+    def _apply_preset(self, index: int) -> None:
+        if index <= 0:
+            return
+        name = gameprefs.PRESET_NAMES[index - 1]
+        values = gameprefs.preset(name)
+        n = 0
+        for f in self.fields:
+            if f.pref.id in values:
+                f.set_value(values[f.pref.id])
+                n += 1
+        self.preset.setCurrentIndex(0)
+        self._changed()
+        changed = len(self._changes())
+        self.ctx.log(f"Game settings: {name} preset filled in ({n} graphics settings, {changed} different from now); "
+                     "press Save changes to keep it")
+        self.state.setText(f"{name} preset filled in: {changed} setting{'s' if changed != 1 else ''} changed "
+                           "(bold). Check them, then Save changes." if changed else
+                           f"Your settings already match the {name} preset.")
 
     def _show_current(self) -> None:
         """Only the selected category's box is shown (with its search matches)."""

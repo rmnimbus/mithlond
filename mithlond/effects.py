@@ -171,3 +171,48 @@ def apply_env(s: Settings, env: dict[str, str]) -> list[str]:
         shown = {k: v for k, v in dxvk_options(s).items() if not k.startswith("d3d9.")}
         notes.append("DXVK: " + ", ".join(f"{k} = {v}" for k, v in shown.items()))
     return notes
+
+
+# ---- presets ---------------------------------------------------------------------------------------------
+PRESET_NAMES = ["Very Low", "Low", "Medium", "High", "Very High"]
+
+# Slower computers: render smaller and upscale with FSR (gamescope), sharpen the result (CAS), shortest frame queue.
+# Faster computers: native resolution, real antialiasing (SMAA) + sharpening, maximum anisotropic filtering.
+_PRESETS: dict[str, dict] = {
+    "Very Low": dict(opt_gamescope=True, gs_render="performance", gs_filter="fsr", gs_sharpness=3,
+                     vkb_enabled=True, vkb_cas=True, vkb_cas_sharpness=0.6, vkb_smaa=False, vkb_fxaa=False,
+                     vkb_dls=False, dxvk_aniso=0, dxvk_latency=1),
+    "Low": dict(opt_gamescope=True, gs_render="balanced", gs_filter="fsr", gs_sharpness=4,
+                vkb_enabled=True, vkb_cas=True, vkb_cas_sharpness=0.5, vkb_smaa=False, vkb_fxaa=False,
+                vkb_dls=False, dxvk_aniso=4, dxvk_latency=1),
+    "Medium": dict(opt_gamescope=False, gs_render="native", gs_filter="linear",
+                   vkb_enabled=True, vkb_cas=True, vkb_cas_sharpness=0.4, vkb_smaa=False, vkb_fxaa=False,
+                   vkb_dls=False, dxvk_aniso=8, dxvk_latency=0),
+    "High": dict(opt_gamescope=False, gs_render="native", gs_filter="linear",
+                 vkb_enabled=True, vkb_cas=True, vkb_cas_sharpness=0.4, vkb_smaa=True, vkb_smaa_edge="luma",
+                 vkb_smaa_threshold=0.05, vkb_smaa_steps=32, vkb_fxaa=False, vkb_dls=False,
+                 dxvk_aniso=16, dxvk_latency=0),
+    "Very High": dict(opt_gamescope=False, gs_render="native", gs_filter="linear",
+                      vkb_enabled=True, vkb_cas=True, vkb_cas_sharpness=0.5, vkb_smaa=True, vkb_smaa_edge="color",
+                      vkb_smaa_threshold=0.05, vkb_smaa_steps=64, vkb_smaa_steps_diag=16, vkb_fxaa=False,
+                      vkb_dls=False, dxvk_aniso=16, dxvk_latency=0),
+}
+
+
+def preset_values(name: str, gamescope_installed: bool | None = None) -> dict:
+    """The settings a preset sets. Without gamescope installed, the upscaling part is left out (gamescope stays
+    off)."""
+    values = dict(_PRESETS[name])
+    if gamescope_installed is None:
+        gamescope_installed = shutil.which("gamescope") is not None
+    if not gamescope_installed:
+        for k in [k for k in values if k.startswith("gs_")] + ["opt_gamescope"]:
+            values.pop(k, None)
+    return values
+
+
+def apply_preset(s: Settings, name: str, gamescope_installed: bool | None = None) -> dict:
+    values = preset_values(name, gamescope_installed)
+    for k, v in values.items():
+        setattr(s, k, v)
+    return values

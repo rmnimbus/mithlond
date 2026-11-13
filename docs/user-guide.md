@@ -87,6 +87,18 @@ them, or cancel.
 Effects that work on the picture DXVK/Vulkan renders, outside the game itself. They apply the next time the game
 starts. Like the other settings tabs it has a category list and a search box.
 
+**Effects preset** (top right) sets everything at once; you can adjust it afterwards:
+
+| Preset | For | Sets |
+|---|---|---|
+| Very Low | weak computers | gamescope renders at 50% and upscales with FSR, CAS sharpening 0.6, frame latency 1 |
+| Low | | gamescope 59% + FSR, CAS 0.5, 4× anisotropic filtering, frame latency 1 |
+| Medium | | native resolution, CAS 0.4, 8× anisotropic filtering |
+| High | | native, SMAA antialiasing + CAS, 16× anisotropic filtering |
+| Very High | fast computers | native, SMAA (color edges, more search steps) + CAS 0.5, 16× anisotropic filtering |
+
+Without gamescope installed, the presets leave upscaling off. Without vkBasalt, its effects are skipped at launch.
+
 - **Sharpening & antialiasing (vkBasalt):** needs the `vkbasalt` package (on Arch-based systems it's in the AUR).
   Tick **Use vkBasalt**, then choose effects: **AMD CAS** sharpening (the usual first choice), **DLS** sharpening,
   **SMAA** or **FXAA** antialiasing, a color **LUT**, and **ReShade shaders** (a folder with `Shaders/` and
@@ -116,6 +128,11 @@ Performance. Settings the game writes that Mithlond doesn't know yet appear unde
 out. Hidden on purpose: your account's world history, the official launcher's own entries, voice device IDs, and
 values the game measures itself.
 
+- **Graphics preset** (next to the search box): Very Low, Low, Medium, High or Very High fills in the
+  graphics settings (detail, draw distance, effects, shadows, water, grass) for slower to faster computers. Your
+  resolution, window mode, sound, interface and controls are left alone. The values appear as unsaved changes in
+  bold; press **Save changes** to keep them. Every preset was checked with the real game: it kept all values (the
+  lowest settings use the game's own minimum, e.g. shadows and reflections *Disabled* on Very Low).
 - **Search:** type in the box above the settings and the list narrows as you type, across all categories. Every
   word must match the setting's name, its name in the file (e.g. `MasterVolume`), its category or its description.
   The category list on the left only lists categories with a match and shows how many; click one to see its

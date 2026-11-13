@@ -23,17 +23,54 @@ class VisualEffectsTab(QWidget):
     def __init__(self, ctx: AppContext, parent=None):
         super().__init__(parent)
         self.ctx = ctx
+        self.preset = QComboBox()
+        self.preset.addItem("Effects preset…")
+        self.preset.addItems(effects.PRESET_NAMES)
+        self.preset.setToolTip("Very Low / Low: render smaller and upscale with FSR (gamescope), sharpen with CAS.\n"
+                               "Medium: CAS sharpening, 8× anisotropic filtering.\n"
+                               "High / Very High: SMAA antialiasing + CAS sharpening, 16× anisotropic filtering.\n"
+                               "Applied right away; adjust anything afterwards.")
+        self.preset.activated.connect(self._apply_preset)
+        head = QHBoxLayout()
+        head.addWidget(subtle("These work on the picture DXVK/Vulkan renders, outside the game itself, and apply the "
+                              "next time the game starts."), 1)
+        head.addWidget(self.preset)
+        self.lay = QVBoxLayout(self)
+        self.lay.addLayout(head)
+        self.page = None
+        self._build_page()
+
+    def _build_page(self) -> None:
+        """(Re)create the categories from the current settings, keeping the selected category and the search."""
+        keep_sel, keep_search = None, ""
+        if self.page is not None:
+            row = self.page.nav.currentRow()
+            keep_sel = self.page.sections[row][0] if row >= 0 else None
+            keep_search = self.page.search.text()
+            self.lay.removeWidget(self.page)
+            self.page.deleteLater()
         self._loading = True
         self.page = SectionedPage("Search effects, e.g. sharpen, fsr, hdr, anisotropic…")
         self.page.add("Sharpening & antialiasing", self._vkbasalt_box())
         self.page.add("Upscaling & display", self._gamescope_box())
         self.page.add("DXVK", self._dxvk_box())
-        lay = QVBoxLayout(self)
-        lay.addWidget(subtle("These work on the picture DXVK/Vulkan renders, outside the game itself, and apply the "
-                             "next time the game starts."))
-        lay.addWidget(self.page, 1)
+        self.lay.addWidget(self.page, 1)
+        self.page.search.setText(keep_search)
+        if keep_sel:
+            self.page.select(keep_sel)
         self._loading = False
         self._refresh()
+
+    def _apply_preset(self, index: int) -> None:
+        if index <= 0:
+            return
+        name = effects.PRESET_NAMES[index - 1]
+        values = effects.apply_preset(self.ctx.settings, name)
+        self.ctx.save()
+        self.preset.setCurrentIndex(0)
+        self._build_page()
+        extra = "" if any(k == "opt_gamescope" for k in values) else " (gamescope isn't installed, so no upscaling)"
+        self.ctx.log(f"Visual effects: {name} preset applied{extra}")
 
     # ---- small builders that load from and save to Settings --------------------------------------------
     def _save(self, *_):
