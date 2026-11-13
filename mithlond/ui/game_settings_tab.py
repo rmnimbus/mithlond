@@ -12,20 +12,9 @@ from PySide6.QtWidgets import (
 )
 
 from .. import gameprefs, procs
-from ..config import DOCS_FOLDER_NAME, Settings
+from ..gameprefs import prefs_file
 from .context import AppContext
 from .widgets import SectionedPage
-
-
-def prefs_file(s: Settings) -> Path | None:
-    """The UserPreferences.ini the game will use: the documents folder Mithlond starts it with, or (without
-    --prefs) the newest one inside the prefix."""
-    if s.use_prefs and s.docs_path:
-        return s.docs_path / "UserPreferences.ini"
-    users = s.prefix_path() / "drive_c" / "users"
-    found = sorted(users.glob(f"*/Documents/{DOCS_FOLDER_NAME}/UserPreferences.ini"),
-                   key=lambda p: p.stat().st_mtime, reverse=True) if users.is_dir() else []
-    return found[0] if found else None
 
 
 class Field:

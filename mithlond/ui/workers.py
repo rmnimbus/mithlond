@@ -28,6 +28,8 @@ class _Task(QRunnable):
             result = self.fn(self._progress) if self.with_progress else self.fn()
         except Exception as e:  # noqa: BLE001 - reported to the UI
             e.__traceback_text__ = traceback.format_exc()  # type: ignore[attr-defined]
+            from .. import logfile
+            logfile.detail(f"Background task failed: {type(e).__name__}: {e}", e.__traceback_text__)
             self._emit(self.signals.error, e)
         else:
             self._emit(self.signals.done, result)

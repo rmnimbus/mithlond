@@ -69,6 +69,24 @@ class MainWindow(QMainWindow):
         dock.setObjectName("log")
         dock.setWidget(self.log)
         dock.setFeatures(QDockWidget.DockWidgetClosable | QDockWidget.DockWidgetMovable)
+        # title bar: "Log", Export logs…, close
+        from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QToolButton
+        from .export_logs import export_logs
+        bar = QWidget()
+        bl = QHBoxLayout(bar)
+        bl.setContentsMargins(6, 2, 4, 2)
+        bl.addWidget(QLabel("Log"))
+        bl.addStretch()
+        exp = QPushButton("Export logs…")
+        exp.setToolTip("Save the logs and a setup summary as a zip for a bug report (personal data removed)")
+        exp.clicked.connect(lambda: export_logs(self, ctx))
+        close = QToolButton()
+        close.setText("✕")
+        close.setAutoRaise(True)
+        close.clicked.connect(dock.close)
+        bl.addWidget(exp)
+        bl.addWidget(close)
+        dock.setTitleBarWidget(bar)
         self.addDockWidget(Qt.BottomDockWidgetArea, dock)
         self.resizeDocks([dock], [110], Qt.Vertical)
         self.log_dock = dock

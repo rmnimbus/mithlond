@@ -25,8 +25,7 @@ SNAP = 10  # snap to the screen edges within this many pixels
 
 def game_resolution(s: Settings, fallback: tuple[int, int]) -> tuple[int, int]:
     """The game's full-screen resolution from its settings, for the canvas size."""
-    from .game_settings_tab import prefs_file
-    p = prefs_file(s)
+    p = gameprefs.prefs_file(s)
     try:
         res = gameprefs.read(p).get("Display.Resolution", "") if p and p.is_file() else ""
         w, h = (int(v) for v in res.lower().split("x"))

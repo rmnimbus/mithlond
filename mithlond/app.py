@@ -14,9 +14,14 @@ def main() -> int:
     ap.add_argument("--version", action="version", version=__version__)
     ap.parse_args()
 
+    from . import logfile
+    logfile.install_crash_hooks()
     from .hostenv import isolate_bundled_qt
     isolate_bundled_qt()
+    import PySide6
+    from PySide6.QtCore import qVersion
     from PySide6.QtWidgets import QApplication
+    logfile.session_header(__version__, f"PySide6 {PySide6.__version__}, Qt {qVersion()}")
 
     from .ui import theme
     from .ui.context import AppContext

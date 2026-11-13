@@ -255,11 +255,16 @@ pointing at the AppImage it runs from, right after an update and at every start,
 update changes the file name or you move the AppImage to another folder. Mithlond only changes an entry it wrote
 itself.
 
+**Export logs…** (here and in the Log panel's title bar) saves a zip with a summary of your system and setup,
+Mithlond's, the game's, Proton's and Companion's logs, and your settings, for whoever helps you with a problem.
+Your user name, home folder, account names, login tickets and e-mail addresses are removed. See
+[Troubleshooting](troubleshooting.md).
+
 ## Files
 
 | What | Where |
 |---|---|
 | Settings | `~/.config/mithlond/config.json` (no passwords) |
-| Log | `~/.cache/mithlond/mithlond.log` (also in the Log panel; tickets and passwords are never logged) |
+| Log | `~/.cache/mithlond/mithlond.log`, older part in `mithlond.log.1` (also in the Log panel; tickets and passwords are never logged) |
 | Addon install records | `~/.local/share/mithlond/installed.json` |
 | Download and feed cache | `~/.cache/mithlond/` |

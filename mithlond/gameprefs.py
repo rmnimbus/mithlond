@@ -382,3 +382,15 @@ def preset(name: str, present: dict[str, str] | None = None) -> dict[str, str]:
     """`Section.Key` → value for a preset. With `present`, only settings that exist in that file."""
     i = PRESET_NAMES.index(name)
     return {k: v[i] for k, v in PRESETS.items() if present is None or k in present}
+
+
+def prefs_file(s) -> Path | None:
+    """The UserPreferences.ini the game will use: the documents folder Mithlond starts it with, or (without
+    --prefs) the newest one inside the prefix."""
+    if s.use_prefs and s.docs_path:
+        return s.docs_path / "UserPreferences.ini"
+    from .config import DOCS_FOLDER_NAME
+    users = s.prefix_path() / "drive_c" / "users"
+    found = sorted(users.glob(f"*/Documents/{DOCS_FOLDER_NAME}/UserPreferences.ini"),
+                   key=lambda p: p.stat().st_mtime, reverse=True) if users.is_dir() else []
+    return found[0] if found else None

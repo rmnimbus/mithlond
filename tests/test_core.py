@@ -1338,6 +1338,78 @@ class LayoutTests(unittest.TestCase):
             app.processEvents()
 
 
+class DiagnosticsTests(unittest.TestCase):
+    def test_redaction(self):
+        from mithlond import diagnostics
+        from mithlond.config import Account
+        s = Settings(accounts=[Account("FrodoBaggins")], last_account="FrodoBaggins")
+        r = diagnostics.Redactor(s)
+        home = str(diagnostics.HOME)
+        text = (f"Logging in as FrodoBaggins to Sting\n{home}/Games/x\n"
+                "lotroclient64.exe -a 3AB9CD -h 1.2.3.4:9004 --glsticketdirect wOjh5eij3m7HQ2AES0bw/x+== --chatserver x\n"
+                "Command: ['Z:\\x\\lotroclient64.exe', '-a', 'M4YX', '--glsticketdirect', 'abc']\n"
+                "mail me at someone@example.com\n" + "Z" * 60 + "\nticket=secret123\n")
+        out = r(text)
+        for secret in ("FrodoBaggins", home, "3AB9CD", "wOjh5eij3m7HQ2AES0bw", "M4YX", "someone@example.com",
+                       "Z" * 60, "secret123"):
+            self.assertNotIn(secret, out)
+        self.assertIn("Logging in as <account> to Sting", out)
+        self.assertIn("~/Games/x", out)
+        self.assertIn("Command: <removed", out)
+
+    def test_export_zip(self):
+        import zipfile
+        from mithlond import diagnostics, logfile
+        from mithlond.config import Account
+        with tempfile.TemporaryDirectory() as d:
+            docs = Path(d) / "docs"
+            docs.mkdir()
+            (docs / "UserPreferences.ini").write_text("[User_1]\nUserName=FrodoBaggins\n[Display]\nResolution=1920x1080\n")
+            s = Settings(accounts=[Account("FrodoBaggins")], last_account="FrodoBaggins", documents_dir=str(docs))
+            s.save()
+            logfile.write("Logging in as FrodoBaggins with --glsticketdirect ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkl0123")
+            with mock.patch.object(diagnostics, "_run", lambda argv, timeout=10: "tool 1.0"):
+                z = diagnostics.export(s, Path(d) / "out.zip")
+            names = zipfile.ZipFile(z).namelist()
+            for n in ("README.txt", "summary.txt", "mithlond.log", "settings.json", "game/UserPreferences.txt",
+                      "plugins.txt"):
+                self.assertIn(n, names)
+            everything = "".join(zipfile.ZipFile(z).read(n).decode() for n in names)
+            self.assertNotIn("FrodoBaggins", everything)
+            self.assertNotIn("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkl0123", everything)
+            self.assertIn("Display.Resolution = 1920x1080", everything)
+            self.assertNotIn("User_1", zipfile.ZipFile(z).read("game/UserPreferences.txt").decode())
+            self.assertIn("Mithlond", zipfile.ZipFile(z).read("summary.txt").decode())
+
+    def test_logfile(self):
+        import sys
+        from mithlond import logfile
+        logfile.write("hello")
+        logfile.detail("Background task failed: X", "Traceback\n  line 1")
+        text = logfile.LOG.read_text()
+        self.assertRegex(text, r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d hello")
+        self.assertIn("    Traceback\n      line 1", text)
+        old_hook = sys.excepthook
+        logfile.install_crash_hooks()
+        try:
+            with mock.patch("sys.__excepthook__"):
+                try:
+                    raise ValueError("boom")
+                except ValueError:
+                    with mock.patch.object(sys, "stderr"):
+                        sys.excepthook(*sys.exc_info())
+        finally:
+            sys.excepthook = old_hook
+        self.assertIn("CRASH: ValueError: boom", logfile.LOG.read_text())
+        # rotation when the file is too big at the next start
+        logfile._fh.close()
+        logfile._fh = None
+        with mock.patch.object(logfile, "MAX_BYTES", 10):
+            logfile.write("after rotation")
+        self.assertTrue(logfile.LOG.with_name("mithlond.log.1").exists())
+        self.assertIn("after rotation", logfile.LOG.read_text())
+
+
 class DesktopEntryTests(unittest.TestCase):
     def test_finished_task_after_window_closed(self):
         from mithlond.ui import workers

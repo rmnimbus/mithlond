@@ -169,6 +169,16 @@ class SettingsTab(QWidget):
         mrow.addWidget(self.menu_btn)
         mrow.addWidget(self.menu_status, 1)
         ab.addRow("Menu", mrow)
+        self.export_btn = QPushButton("Export logs…")
+        self.export_btn.setToolTip("Save a zip with Mithlond's and the game's logs and a summary of your setup, to send\n"
+                                   "to someone helping you. Personal data (user and account names, login tickets,\n"
+                                   "e-mail addresses) is removed.")
+        from .export_logs import export_logs
+        self.export_btn.clicked.connect(lambda: export_logs(self, self.ctx))
+        erow = QHBoxLayout()
+        erow.addWidget(self.export_btn)
+        erow.addWidget(subtle("For bug reports: logs and setup summary in one zip, personal data removed."), 1)
+        ab.addRow("Problems?", erow)
         ab.addRow("", subtle(f"{how} Releases: {selfupdate.RELEASES_PAGE.rsplit('/latest', 1)[0]}"))
         about_box = QGroupBox("About && updates")  # && = a literal & in Qt titles
         about_box.setLayout(ab)

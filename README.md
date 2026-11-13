@@ -46,7 +46,8 @@ It never goes into a file.
 5. **Play:** enter your account, pick a world, press **PLAY**.
 
 More in the **[User guide](docs/user-guide.md)**. If something doesn't work, see
-**[Troubleshooting](docs/troubleshooting.md)**.
+**[Troubleshooting](docs/troubleshooting.md)**. To ask for help, click **Export logs…** in the Log panel
+and send the zip it saves (personal details are removed).
 
 ### Optional programs
 

@@ -6,8 +6,8 @@ import datetime as dt
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
-from .. import runner
-from ..config import CACHE_DIR, Settings
+from .. import logfile, runner
+from ..config import Settings
 
 
 class AppContext(QObject):
@@ -23,15 +23,11 @@ class AppContext(QObject):
         self.games: list[runner.ManagedProcess] = []
         self.companion: runner.ManagedProcess | None = None
         self._companion_timer: QTimer | None = None
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        self._logfile = open(CACHE_DIR / "mithlond.log", "a", encoding="utf-8")
 
     # ---- logging -------------------------------------------------------------
     def log(self, msg: str) -> None:
-        line = f"[{dt.datetime.now():%H:%M:%S}] {msg}"
-        self._logfile.write(line + "\n")
-        self._logfile.flush()
-        self.log_line.emit(line)
+        logfile.write(msg)  # the file gets the date too
+        self.log_line.emit(f"[{dt.datetime.now():%H:%M:%S}] {msg}")
 
     def save(self) -> None:
         self.settings.save()
@@ -103,4 +99,4 @@ class AppContext(QObject):
             self.companion.stop()
 
     def shutdown(self) -> None:
-        self._logfile.close()
+        logfile.close()

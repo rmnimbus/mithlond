@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Export logs:** a button in the Log panel's title bar and in **Settings → About & updates** saves one zip
+  (default `~/Downloads/mithlond-logs-<date>.zip`) to send to whoever helps you. It contains a system and
+  setup summary (distribution, GPU and driver, Vulkan, Wine/Proton/umu-run, gamescope, vkBasalt, SELinux,
+  the prefix, your Mithlond options), Mithlond's log, the game's own `lotroclient.log`, Proton's log, your
+  game settings, installed plugins, the effects configs and Companion's log. Your user name, home folder,
+  account names, login tickets and e-mail addresses are removed, and `README.txt` inside lists everything.
+- **Better log file:** `~/.cache/mithlond/mithlond.log` now has the date on every line, a header for each start
+  (version, Python, Qt), and full tracebacks of crashes and failed background tasks. It's moved to
+  `mithlond.log.1` when it passes 2 MB instead of growing forever.
 - **New Layouts tab** for the interface layouts the game saves with `/ui layout save <name>`: drag and resize
   windows on a screen-sized canvas (or type pixel values), edit the layout's interface options and the chat
   colors and font sizes, and copy, rename or delete layouts. Saving changes only the edited lines and keeps a

@@ -1,7 +1,13 @@
 # Troubleshooting
 
 The **Log** panel at the bottom of the window shows everything the game, Wine/Proton and Companion print. The
-same log is saved in `~/.cache/mithlond/mithlond.log`.
+same log is saved in `~/.cache/mithlond/mithlond.log`, with dates and the full error details.
+
+**Asking for help:** click **Export logs…** (in the Log panel's title bar, or **Settings → About & updates**) and
+send the zip it saves. It holds everything needed to find the problem: your system, Wine/Proton setup, Mithlond's
+log, the game's log and your settings. Your user name, home folder, account names, login tickets and e-mail
+addresses are removed first; `README.txt` in the zip lists what's inside. If the problem is with the game itself,
+start it once more before exporting so the newest game log is included.
 
 ### Double-clicking the AppImage says "archive type not supported" (or opens an archive tool)
 The file isn't marked executable. Browsers remove that permission from every download. Run
