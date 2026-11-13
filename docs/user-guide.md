@@ -137,6 +137,8 @@ and press **Reload**.
   and **Show none** apply to the windows listed, and the search finds any of the ~160 windows.
 - **Interface options:** the layout's ~190 options (accepting duels/trades/invites, per-window UI scales,
   show/hide toggles, toolbar slots, quest guide colors…) in categories with search.
+  `/ui layout load` sets these options as well as the window positions (checked in game with
+  *Always loot all*), so two layouts can differ only in their options.
 - **Chat colors:** color and font size for each chat message type (Say, Tell, Kinship, World, loot, combat…),
   with a preview line.
 
