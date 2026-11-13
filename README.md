@@ -19,7 +19,7 @@ alongside the game.
 | **Layouts** | Edit saved interface layouts (`/ui layout save`/`load`): drag and resize windows on a screen-sized canvas, interface options, chat colors and sizes. |
 | **Downloads** | Plugins, skins and music packs from [lotrointerface.com](https://www.lotrointerface.com/). Browse, search, install (dependencies included), update and uninstall. It works alongside LOTRO Plugin Compendium and picks up plugins you installed by hand. |
 | **Music** | Import `.abc` songs (files, folders, zips, drag and drop) and browse them by title and part count. Keeps the **Songbook** plugin's song list up to date. Downloads and starts **Maestro** and **WAN Songbook Filler**, and links to **BruTE**. |
-| **Companion** | Downloads, updates and starts **LotRO Companion**, and can open and close it along with the game. |
+| **LotRO Companion** | Downloads, updates and starts **LotRO Companion**, and can open and close it along with the game. |
 | **Settings** | Game, documents, plugins and downloads folders. Runner (system Wine or any Proton) and prefix, environment variables, and game options (gamescope, MangoHud, GameMode, DXVK HUD…). |
 
 Your password is saved in the desktop keyring (KWallet, GNOME Keyring, KeePassXC… through the Secret Service API).

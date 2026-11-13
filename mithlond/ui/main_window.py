@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.layouts, "Layouts")
         self.tabs.addTab(self.addons, "Downloads")
         self.tabs.addTab(self.songs, "Music")
-        self.tabs.addTab(self.companion, "Companion")
+        self.tabs.addTab(self.companion, "LotRO Companion")
         self.tabs.addTab(self.settings, "Settings")
         self.update_banner = UpdateBanner()
         central = QWidget()

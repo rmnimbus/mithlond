@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The **Companion** tab is now called **LotRO Companion**, the name its author uses, and its buttons, options and
+  messages say "LotRO Companion" too.
 - **Export logs:** a button in the Log panel's title bar and in **Settings → About & updates** saves one zip
   (default `~/Downloads/mithlond-logs-<date>.zip`) to send to whoever helps you. It contains a system and
   setup summary (distribution, GPU and driver, Vulkan, Wine/Proton/umu-run, gamescope, vkBasalt, SELinux,

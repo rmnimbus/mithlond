@@ -78,7 +78,7 @@ class AppContext(QObject):
             return False
         how = "Java" if self.settings.companion_mode == "native" else self.settings.runner
         if self.settings.companion_mode != "native" and runner.proton_uses_start_unix(self.settings):
-            how += "; this Proton build can't start Companion's Java directly, so it uses Companion's own launcher"
+            how += "; this Proton build can't start LotRO Companion's Java directly, so it uses that program's own launcher"
         self.log(f"Starting LotRO Companion ({how})")
         try:
             self.companion = runner.ManagedProcess("companion", argv, env, cwd, self)

@@ -79,7 +79,17 @@ secret-tool…) get the user's original environment (`hostenv.py`).
 
 ## Releasing
 
-1. Bump `mithlond/__init__.py`, add a CHANGELOG entry, and commit.
-2. Tag `vX.Y.Z` and push to Gitea. Gitea's push mirror copies the commit and tag to GitHub.
-3. Build with `packaging/build-appimage.sh` and create the release with `Mithlond-X.Y.Z-x86_64.AppImage`
-   attached, on Gitea and on **GitHub**. The updater reads GitHub's "latest release" and its asset's `digest`.
+`packaging/release.sh` does the whole release in two steps, with the per-build check in between:
+
+1. Write the changes under `## Unreleased` in CHANGELOG.md.
+2. `packaging/release.sh build X.Y.Z` sets `__version__`, renames `## Unreleased` to `## X.Y.Z` and builds
+   `dist/Mithlond-X.Y.Z-x86_64.AppImage`.
+3. Test that AppImage: the test suite and one real launch with saved settings.
+4. `packaging/release.sh publish X.Y.Z [-F message-file]` commits (message: the version plus the changelog section,
+   or the given file), tags `vX.Y.Z`, pushes to Gitea, creates the Gitea release with the AppImage, waits until
+   Gitea's push mirror has brought the tag to GitHub, creates the GitHub release (marked latest) with the
+   AppImage, and checks that the updater sees `X.Y.Z` with the same SHA-256 as the local file.
+
+`publish` skips whatever already exists, so after a failure (network, mirror delay) just run it again. It needs
+`~/.config/gitea/token` and `~/.config/github/token` (never printed; `packaging/publish_release.py` holds the API
+calls). The updater reads GitHub's "latest release" and its asset's `digest`.

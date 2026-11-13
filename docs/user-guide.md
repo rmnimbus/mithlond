@@ -223,18 +223,18 @@ At the bottom of the Music tab, closed by default: click its title to open it.
 
 The note under each tool shows the latest release and how old it is.
 
-## Companion
+## LotRO Companion
 
-- **Folder:** empty means `<downloads>/LotRO Companion`. **Download Companion** installs it there.
-  **Update Companion** replaces it with the latest release and keeps the previous version as
+- **Folder:** empty means `<downloads>/LotRO Companion`. **Download LotRO Companion** installs it there.
+  **Update LotRO Companion** replaces it with the latest release and keeps the previous version as
   `LotRO Companion.old-<version>`.
-- **Run:** *Through Wine/Proton* (recommended) shares the game's prefix, so Companion can read character data
+- **Run:** *Through Wine/Proton* (recommended) shares the game's prefix, so LotRO Companion can read character data
   from the running game. *Natively with system Java* runs it as a Linux program.
-- **Start Companion when the game starts:** off by default. When on, it starts after the delay you set.
-  *Close Companion when the last game client exits* closes it again.
-- **Skip Companion's built-in updater:** recommended. Companion's own updater can hang forever before its
-  window appears. Mithlond starts Companion directly instead, and you update it with the button above.
-- Companion keeps its data (accounts, characters) in `C:\users\<user>\.lotrocompanion` inside the prefix, or in
+- **Start LotRO Companion when the game starts:** off by default. When on, it starts after the delay you set.
+  *Close LotRO Companion when the last game client exits* closes it again.
+- **Skip LotRO Companion's built-in updater:** recommended. LotRO Companion's own updater can hang forever before its
+  window appears. Mithlond starts LotRO Companion directly instead, and you update it with the button above.
+- LotRO Companion keeps its data (accounts, characters) in `C:\users\<user>\.lotrocompanion` inside the prefix, or in
   `~/.lotrocompanion` in native mode.
 
 ## Updates
@@ -256,7 +256,7 @@ update changes the file name or you move the AppImage to another folder. Mithlon
 itself.
 
 **Export logs…** (here and in the Log panel's title bar) saves a zip with a summary of your system and setup,
-Mithlond's, the game's, Proton's and Companion's logs, and your settings, for whoever helps you with a problem.
+Mithlond's, the game's, Proton's and LotRO Companion's logs, and your settings, for whoever helps you with a problem.
 Your user name, home folder, account names, login tickets and e-mail addresses are removed. See
 [Troubleshooting](troubleshooting.md).
 

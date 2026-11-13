@@ -261,7 +261,8 @@ def companion_command(s: Settings) -> tuple[list[str], dict[str, str], Path]:
     from . import companion
     base = s.companion_path()
     if not base.exists():
-        raise RunnerError(f"LotRO Companion is not installed in {base}. Use 'Download Companion' on the Companion tab.")
+        raise RunnerError(f"LotRO Companion is not installed in {base}. "
+                          "Use 'Download LotRO Companion' on the LotRO Companion tab.")
     app = companion.app_dir(base)
     native = s.companion_mode == "native"
     # Companion is started with a Linux path (dos=False): that route handles its folder name with a space and

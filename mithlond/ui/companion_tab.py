@@ -42,7 +42,7 @@ class CompanionTab(QWidget):
         self.path.set_text(s.companion_dir)
 
         self.mode_runner = QRadioButton("Through Wine/Proton, in the game's prefix (recommended)")
-        self.mode_runner.setToolTip("Needed for Companion to read character data from the running game client")
+        self.mode_runner.setToolTip("Needed for LotRO Companion to read character data from the running game client")
         self.mode_native = QRadioButton("Natively with system Java")
         java = shutil.which("java")
         self.mode_native.setToolTip(f"Uses {java}" if java else "Java is not installed")
@@ -52,23 +52,23 @@ class CompanionTab(QWidget):
         grp.addButton(self.mode_native)
         (self.mode_native if s.companion_mode == "native" and java else self.mode_runner).setChecked(True)
 
-        self.with_game = QCheckBox("Start Companion when the game starts")
+        self.with_game = QCheckBox("Start LotRO Companion when the game starts")
         self.with_game.setChecked(s.companion_with_game)
         self.delay = QSpinBox()
         self.delay.setRange(0, 300)
         self.delay.setSuffix(" s")
         self.delay.setValue(s.companion_delay)
         self.delay.setMaximumWidth(110)
-        self.close_with = QCheckBox("Close Companion when the last game client exits")
+        self.close_with = QCheckBox("Close LotRO Companion when the last game client exits")
         self.close_with.setChecked(s.companion_close_with_game)
-        self.skip_updater = QCheckBox("Skip Companion's built-in updater (recommended)")
-        self.skip_updater.setToolTip("Companion's own updater can hang forever before its window opens.\n"
-                                     "Mithlond starts Companion directly and updates it from the Update button below.")
+        self.skip_updater = QCheckBox("Skip LotRO Companion's built-in updater (recommended)")
+        self.skip_updater.setToolTip("LotRO Companion's own updater can hang forever before its window opens.\n"
+                                     "Mithlond starts LotRO Companion directly and updates it from the Update button below.")
         self.skip_updater.setChecked(s.companion_skip_updater)
 
         self.version = QLabel("Version: checking…")
         self.version.setWordWrap(True)
-        self.update_btn = QPushButton("Update Companion")
+        self.update_btn = QPushButton("Update LotRO Companion")
         self.update_btn.setEnabled(False)
         self.check_btn = QPushButton("Check for updates")
         self.progress = QProgressBar()
@@ -102,7 +102,7 @@ class CompanionTab(QWidget):
         lay.addWidget(box)
         lay.addLayout(row)
         lay.addWidget(subtle(
-            "Companion is a separate Java/Swing program, so it opens in its own window rather than inside this "
+            "LotRO Companion is a separate Java/Swing program, so it opens in its own window rather than inside this "
             "launcher. The launcher starts it alongside the game and closes it afterwards. In the Wine/Proton mode it "
             "shares the game's prefix, so its live character sync can see the client. Its data is kept per prefix "
             "(…/drive_c/users/<you>/.lotrocompanion) or in ~/.lotrocompanion when run natively."))
@@ -143,14 +143,14 @@ class CompanionTab(QWidget):
         self.state.setObjectName("ok" if running else "")
         self.state.style().unpolish(self.state)
         self.state.style().polish(self.state)
-        self.toggle.setText("Stop Companion" if running else "Start Companion now")
+        self.toggle.setText("Stop LotRO Companion" if running else "Start LotRO Companion now")
 
     # ---- updates ----------------------------------------------------------------------
     def _check_folder(self, p: Path) -> tuple[bool, str]:
         base = p if str(p) not in ("", ".") else self.ctx.settings.companion_path()
         ok, msg = check_companion(base)
         if not base.exists():
-            return True, f"{base}: not installed yet. Use 'Download Companion' below."
+            return True, f"{base}: not installed yet. Use 'Download LotRO Companion' below."
         return ok, (f"{base}: {msg}" if str(p) in ("", ".") else msg)
 
     def _base(self) -> Path:
@@ -171,12 +171,12 @@ class CompanionTab(QWidget):
             newer = companion.is_newer(rel.version, installed)
             if not base.exists():
                 self.version.setText(f"Not installed · latest {rel.version}")
-                self.update_btn.setText("Download Companion")
+                self.update_btn.setText("Download LotRO Companion")
                 self.update_btn.setEnabled(True)
                 return
             self.version.setText(f"Installed {installed or 'unknown'} · latest {rel.version}"
                                  + ("  ⬆ update available" if newer else "  ✔ up to date"))
-            self.update_btn.setText("Update Companion" if newer else "Reinstall")
+            self.update_btn.setText("Update LotRO Companion" if newer else "Reinstall")
             self.update_btn.setEnabled(True)
 
         def failed(e):
@@ -193,13 +193,13 @@ class CompanionTab(QWidget):
                    if p.exe_name == "lotro companion.exe" or "delta.games.lotro.Main" in " ".join(p.argv)
                    or "delta.kickstarter.Kickstarter" in " ".join(p.argv)]
         if self.ctx.companion_running() or running:
-            QMessageBox.information(self, "Update Companion", "Close LotRO Companion first (or use STOP).")
+            QMessageBox.information(self, "Update LotRO Companion", "Close LotRO Companion first (or use STOP).")
             return
         if not base.exists():
             question = f"Download LotRO Companion {rel.version} (about 270 MB) into\n{base}?"
         else:
             question = (f"Download LotRO Companion {rel.version} (about 270 MB) and replace\n{base}?\n\n"
-                        f"The current version is kept as '{base.name}.old-…' next to it. Your Companion data "
+                        f"The current version is kept as '{base.name}.old-…' next to it. Your LotRO Companion data "
                         "(characters, settings) is stored elsewhere and isn't touched.")
         if QMessageBox.question(self, "LotRO Companion", question) != QMessageBox.Yes:
             return
@@ -225,7 +225,7 @@ class CompanionTab(QWidget):
             self.progress.setVisible(False)
             self.check_btn.setEnabled(True)
             self.update_btn.setEnabled(True)
-            QMessageBox.warning(self, "Update Companion", str(e))
+            QMessageBox.warning(self, "Update LotRO Companion", str(e))
 
         run_task(lambda progress: companion.update(base, rel, lambda *a: progress(a)),
                  on_done=done, on_error=failed, on_progress=prog)

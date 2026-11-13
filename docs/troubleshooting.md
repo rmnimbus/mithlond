@@ -1,6 +1,6 @@
 # Troubleshooting
 
-The **Log** panel at the bottom of the window shows everything the game, Wine/Proton and Companion print. The
+The **Log** panel at the bottom of the window shows everything the game, Wine/Proton and LotRO Companion print. The
 same log is saved in `~/.cache/mithlond/mithlond.log`, with dates and the full error details.
 
 **Asking for help:** click **Export logs…** (in the Log panel's title bar, or **Settings → About & updates**) and
@@ -63,9 +63,9 @@ between several prefixes, replace the other prefixes' `The Lord of the Rings Onl
 it.
 
 ### LotRO Companion never opens
-Leave **Skip Companion's built-in updater** ticked on the Companion tab. Companion's own updater can stop
-partway through a download and wait forever. Mithlond then starts Companion directly. Update Companion with
-the **Update Companion** button instead.
+Leave **Skip LotRO Companion's built-in updater** ticked on the LotRO Companion tab. LotRO Companion's own updater can stop
+partway through a download and wait forever. Mithlond then starts LotRO Companion directly. Update LotRO Companion with
+the **Update LotRO Companion** button instead.
 
 ### Patching fails
 **Check for game updates** runs the game's `patchclient.dll` through your runner. If that fails on your setup,

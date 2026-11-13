@@ -73,7 +73,7 @@ def latest_release() -> Release:
         r.raise_for_status()
         root = ET.fromstring(r.content)
     except (requests.RequestException, ET.ParseError) as e:
-        raise CompanionError(f"Could not check for Companion updates: {e}") from e
+        raise CompanionError(f"Could not check for LotRO Companion updates: {e}") from e
     best: Release | None = None
     for item in root.iter("item"):
         title = (item.findtext("title") or "").strip().lstrip("/")
@@ -81,7 +81,7 @@ def latest_release() -> Release:
         if m and (best is None or _vkey(m.group(1)) > _vkey(best.version)):
             best = Release(m.group(1), title)
     if best is None:
-        raise CompanionError("No Companion release found on SourceForge")
+        raise CompanionError("No LotRO Companion release found on SourceForge")
     return best
 
 
