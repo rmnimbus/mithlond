@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.15
 
 - README: screenshots of the main pages (made with a sample setup).
 - Fix: a prefix set to the `drive_c` folder inside a prefix (or a folder in it) is now taken as the prefix
