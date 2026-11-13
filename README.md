@@ -26,6 +26,21 @@ alongside the game.
 Your password is saved in the desktop keyring (KWallet, GNOME Keyring, KeePassXC… through the Secret Service API).
 It never goes into a file.
 
+## Screenshots
+
+(Made with a sample setup: the account, characters, plugins and songs are examples.)
+
+| | |
+|---|---|
+| ![Play: login, worlds, news and this week's coupon](docs/screenshots/play.png) | ![In game settings](docs/screenshots/in-game-settings.png) |
+| **Play:** login, world status, news and the weekly coupon | **In game settings:** the game's options by category, with search and presets |
+| ![Visual effects](docs/screenshots/visual-effects.png) | ![Layouts](docs/screenshots/layouts.png) |
+| **Visual effects:** vkBasalt, gamescope and DXVK | **Layouts:** move and resize interface windows, with steps and snapping |
+| ![Key bindings](docs/screenshots/key-bindings.png) | ![Get plugins, all lotrointerface items](docs/screenshots/plugins-get-all.png) |
+| **Key bindings:** search, change, find keys that do two things | **Get plugins:** the curated list or every lotrointerface item (with the note shown here) |
+| ![Load plugins](docs/screenshots/plugins-load.png) | ![Music](docs/screenshots/music.png) |
+| **Load plugins:** which characters auto-load each plugin, per server | **Music:** songs, the Songbook list, music packs and tools |
+
 ## Getting started
 
 1. Download `Mithlond-<version>-x86_64.AppImage` and **make it executable**. Browsers always save downloads

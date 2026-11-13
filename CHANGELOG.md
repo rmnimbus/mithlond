@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- README: screenshots of the main pages (made with a sample setup).
 - Fix: a prefix set to the `drive_c` folder inside a prefix (or a folder in it) is now taken as the prefix
   itself, at startup and when saving Settings. Before, Proton made a second, empty prefix inside `drive_c`
   ("Prefix has an invalid version", "unable to use parent for game drive"), so Companion and the game kept
