@@ -22,6 +22,7 @@ mithlond/
   tools.py        Maestro / BruTE / WAN Songbook Filler: latest release info, download
   effects.py      Visual effects: vkBasalt.conf, dxvk.conf, gamescope arguments, environment for the game
   desktopentry.py application menu entry that follows the AppImage
+  uilayout.py     the game's ui/layouts/*.layout: windows, options, chat colors; in-place saving
   gameprefs.py    the game's UserPreferences.ini: schema of every known setting (names and values from the client), read, save
   selfupdate.py   Mithlond's own updates from GitHub releases (rmnimbus/mithlond): check, download, verify, replace
   keystore.py     password storage through secret-tool

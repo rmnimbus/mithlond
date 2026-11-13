@@ -120,6 +120,30 @@ Tested with real game starts: vkBasalt loaded into the game with Mithlond's conf
 game at a 1280x720 render size with FSR on a 1920x1080 output; DXVK found the config and applied 16x anisotropic
 filtering and a frame latency of 1.
 
+## Layouts
+
+Edits the interface layouts the game saves with **/ui layout save <name>** (files in
+`<documents>/ui/layouts/<name>.layout`). The game applies a layout with **/ui layout load <name>**; after
+changing one here, type that in game. To capture the layout you have in game right now, `/ui layout save` it
+and press **Reload**.
+
+- **Layout** list: **Copy as…** (a new layout from this one), **Rename…**, **Delete** (moved into
+  `ui/layouts/.mithlond-backups`, so it can be recovered), **Reload**, **Open folder**. Names may use letters,
+  digits, `-` and `_`, because they're typed after `/ui layout load`.
+- **Windows:** your screen drawn at the game's resolution, with each interface window as a box. Drag a box to
+  move it, drag its bottom-right corner to resize it, or type exact pixel values below the screen. Windows snap
+  to the screen edges. The list on the left picks which windows are drawn: by default what you see while
+  playing (chat, vitals, target, minimap, quest tracker, quickslot bars, bags, fellowship members); **Show all**
+  and **Show none** apply to the windows listed, and the search finds any of the ~160 windows.
+- **Interface options:** the layout's ~190 options (accepting duels/trades/invites, per-window UI scales,
+  show/hide toggles, toolbar slots, quest guide colors…) in categories with search.
+- **Chat colors:** color and font size for each chat message type (Say, Tell, Kinship, World, loot, combat…),
+  with a preview line.
+
+Saving writes only the changed lines (the rest of the file stays exactly as the game wrote it) and keeps the
+previous version in the backup folder; **Restore previous** puts it back. Chat tabs and their filters are not
+part of layout files: the game keeps them on its servers.
+
 ## In game settings
 
 The tab is called **In game settings**. It holds the game's own options, read from `UserPreferences.ini` in the documents folder the game is started with. They're

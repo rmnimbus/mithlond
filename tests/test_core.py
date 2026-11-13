@@ -1191,6 +1191,114 @@ class EffectsTests(unittest.TestCase):
         app.processEvents()
 
 
+SAMPLE_LAYOUT = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\r\n<UI>\r\n\r\n  <Version Value="1.0"/>\r\n\r\n'
+    '  <Aliases/>\r\n\r\n  <Layouts>\r\n    <Layout ID="0x22000012">\r\n'
+    '      <Element Height="0.307407" ID="NewChatWindow1" Width="0.227604" X="-0.000260" Y="0.692130"/>\r\n'
+    '      <Element Height="0.050000" ID="GamePlay_QuestTrackerBox" Width="0.200000" X="0.790000" Y="0.300000"/>\r\n'
+    '    </Layout>\r\n    <Layout ID="0x220008A2">\r\n'
+    '      <Element Height="0.458333" ID="Vendor_Window" Width="0.335938" X="0.004948" Y="0.106019"/>\r\n'
+    '    </Layout>\r\n  </Layouts>\r\n\r\n  <Options>\r\n'
+    '    <Option Name="AcceptDuels" Value="True"/>\r\n    <Option Name="ChatUIScale" Value="1.000000"/>\r\n'
+    '    <Option Name="QuestGuideColor1" Value="0.816 0.243 0.176 1.000"/>\r\n'
+    '    <Option Name="ShowVitalsAsPercentage" Value="CurrentAndMax"/>\r\n  </Options>\r\n\r\n  <ChatColors>\r\n'
+    '    <ChatFont Color="1.000 0.322 0.322 1.000" Size="Medium" TextType="Tell"/>\r\n'
+    '    <ChatFont Color="1.000 0.000 0.000 1.000" Size="Medium" TextType="CombatEnemy"/>\r\n'
+    '  </ChatColors>\r\n\r\n</UI>\r\n')
+
+
+class UILayoutTests(unittest.TestCase):
+    def _docs(self, d):
+        lay = Path(d) / "ui" / "layouts"
+        lay.mkdir(parents=True)
+        (lay / "main.layout").write_bytes(SAMPLE_LAYOUT.encode())
+        return Path(d), lay / "main.layout"
+
+    def test_read_save_files(self):
+        import copy
+        from mithlond import uilayout as u
+        with tempfile.TemporaryDirectory() as d:
+            docs, f = self._docs(d)
+            self.assertEqual([p.name for p in u.list_layouts(docs)], ["main.layout"])
+            orig = u.read(f)
+            self.assertEqual((len(orig.windows), len(orig.options), len(orig.chat)), (3, 4, 2))
+            self.assertEqual([w.name for w in orig.windows], ["Chat Window 1", "Quest Tracker", "Vendor"])
+            self.assertEqual([w.hud for w in orig.windows], [True, True, False])
+            self.assertIsNone(u.save(orig, copy.deepcopy(orig)))  # nothing changed: file untouched
+            self.assertEqual(f.read_bytes(), SAMPLE_LAYOUT.encode())
+            ed = copy.deepcopy(orig)
+            ed.windows[1].x, ed.windows[1].h = 0.5, 0.25
+            ed.options["AcceptDuels"] = "False"
+            ed.chat[0].color, ed.chat[0].size = (0.0, 0.5, 1.0, 1.0), "Large"
+            b = u.save(orig, ed)
+            self.assertEqual(b.read_bytes(), SAMPLE_LAYOUT.encode())
+            new = f.read_bytes().decode()
+            self.assertIn('<Element Height="0.250000" ID="GamePlay_QuestTrackerBox" Width="0.200000" X="0.500000" '
+                          'Y="0.300000"/>\r\n', new)
+            self.assertIn('<Option Name="AcceptDuels" Value="False"/>', new)
+            self.assertIn('<ChatFont Color="0.000 0.500 1.000 1.000" Size="Large" TextType="Tell"/>', new)
+            changed = [a for a, b2 in zip(SAMPLE_LAYOUT.split("\r\n"), new.split("\r\n")) if a != b2]
+            self.assertEqual(len(changed), 3)
+            self.assertEqual(new.count("\r\n"), SAMPLE_LAYOUT.count("\r\n"))
+            self.assertEqual(u.latest_backup(f), b)
+            self.assertTrue(u.valid_name("raid_ui-2") and not u.valid_name("my layout"))
+            c = u.copy_layout(f, "raid")
+            r = u.rename_layout(c, "raid2")
+            self.assertEqual(sorted(p.stem for p in u.list_layouts(docs)), ["main", "raid2"])
+            kept = u.delete_layout(r)
+            self.assertTrue(kept.exists() and not r.exists())
+            self.assertEqual(u.pretty_chat("Guild"), "Kinship")
+            self.assertEqual(u.pretty_chat("UserChat3"), "User channel 3")
+            self.assertEqual(u.option_group("AcceptDuels"), "Social")
+            self.assertEqual(u.option_group("ChatUIScale"), "Chat")
+
+    def test_tab(self):
+        from PySide6.QtWidgets import QApplication
+        from mithlond.ui.context import AppContext
+        from mithlond.ui.layout_tab import LayoutTab
+        app = QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as d:
+            docs, f = self._docs(d)
+            tab = LayoutTab(AppContext(Settings(documents_dir=str(docs))))
+            self.assertEqual(tab.files.currentText(), "main")
+            self.assertIn("/ui layout load main", tab.hint.text())
+            ed = tab.windows
+            shown = [i for i in ed.items.values() if i.isVisible()]
+            self.assertEqual(sorted(i.win.id for i in shown), ["GamePlay_QuestTrackerBox", "NewChatWindow1"])  # core HUD
+            ed._tick_listed(False)
+            self.assertFalse(any(i.isVisible() for i in ed.items.values()))
+            ed.hud_only.setChecked(False)
+            ed._tick_listed(True)
+            self.assertTrue(all(i.isVisible() for i in ed.items.values()))
+            self.assertFalse(tab.save_btn.isEnabled())
+            chat = ed.items["NewChatWindow1"]
+            sw, sh = ed.screen_size
+            chat.set_pixels(100, 200, 400, 300)  # as if dragged/resized or typed
+            self.assertAlmostEqual(chat.win.x, round(100 / sw, 6))
+            self.assertAlmostEqual(chat.win.h, round(300 / sh, 6))
+            self.assertTrue(tab.save_btn.isEnabled())
+            tab.edited.options["AcceptDuels"] = "False"
+            tab.edited.chat[1].size = "XLarge"
+            tab._changed()
+            self.assertIn("3 changes", tab.state.text())
+            tab.save()
+            text = f.read_text()
+            self.assertIn('Value="False"', text)
+            self.assertIn('Size="XLarge" TextType="CombatEnemy"', text)
+            self.assertIn(f'X="{100 / sw:.6f}"', text)
+            self.assertTrue(tab.restore_btn.isEnabled())
+            with mock.patch("mithlond.ui.layout_tab.QMessageBox.question", return_value=QMessageBoxYes()):
+                tab.restore()
+            self.assertEqual(f.read_bytes(), SAMPLE_LAYOUT.encode())
+            tab.deleteLater()
+            app.processEvents()
+
+
+def QMessageBoxYes():
+    from PySide6.QtWidgets import QMessageBox
+    return QMessageBox.Yes
+
+
 class LayoutTests(unittest.TestCase):
     def test_settings_sections_and_music_tools(self):
         from PySide6.QtWidgets import QApplication

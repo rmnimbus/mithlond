@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **New Layouts tab** for the interface layouts the game saves with `/ui layout save <name>`: drag and resize
+  windows on a screen-sized canvas (or type pixel values), edit the layout's interface options and the chat
+  colors and font sizes, and copy, rename or delete layouts. Saving changes only the edited lines and keeps a
+  backup; apply a layout in game with `/ui layout load <name>`.
+
 ## 1.4.12
 
 - **Lighter in the background:** In game settings checks whether the game is running only while that tab is
