@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.12
+
+- **Lighter in the background:** In game settings checks whether the game is running only while that tab is
+  open (it used to scan all processes every 4 seconds the whole time Mithlond ran).
+- **Faster settings search:** each setting's search text is collected once instead of on every keystroke.
+- In game settings, Settings and Visual effects now share one category/search component.
+- Fix: no more "Signal source has been deleted" errors when Mithlond is closed while it's still loading news, the
+  world list or the plugin catalogue.
+- README credits umu-launcher (bundled, GPL-3.0), PySide6, the bundled Debian libraries, vkBasalt, gamescope and
+  DXVK.
+
 ## 1.4.11
 
 - **Presets:** In game settings has a **Graphics preset** list (Very Low … Very High) that fills in the game's

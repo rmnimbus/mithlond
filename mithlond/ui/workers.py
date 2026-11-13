@@ -25,12 +25,23 @@ class _Task(QRunnable):
 
     def run(self) -> None:
         try:
-            result = self.fn(self.signals.progress.emit) if self.with_progress else self.fn()
+            result = self.fn(self._progress) if self.with_progress else self.fn()
         except Exception as e:  # noqa: BLE001 - reported to the UI
             e.__traceback_text__ = traceback.format_exc()  # type: ignore[attr-defined]
-            self.signals.error.emit(e)
+            self._emit(self.signals.error, e)
         else:
-            self.signals.done.emit(result)
+            self._emit(self.signals.done, result)
+
+    def _progress(self, value) -> None:
+        self._emit(self.signals.progress, value)
+
+    @staticmethod
+    def _emit(signal, value) -> None:
+        """Report to the UI, unless it's already gone (Mithlond closed while this task was still running)."""
+        try:
+            signal.emit(value)
+        except RuntimeError:
+            pass
 
 
 def run_task(

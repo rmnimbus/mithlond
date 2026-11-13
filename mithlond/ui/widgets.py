@@ -103,31 +103,32 @@ def subtle(text: str) -> QLabel:
 
 class SectionedPage(QWidget):
     """Category list on the left; the selected category's box on the right; a live search box. Typing hides every
-    form row that doesn't contain all the typed words (label, texts, tooltips) and categories left without a match;
-    the selected category then shows only its matching rows."""
+    form row that doesn't contain all the typed words and categories left without a match; the selected category
+    shows only its matching rows. Each row's search text is collected once, when its category is added."""
 
-    def __init__(self, placeholder: str = "Search…", parent=None):
+    def __init__(self, placeholder: str = "Search…", counts: bool = False, parent=None):
         from PySide6.QtWidgets import QListWidget, QScrollArea
         super().__init__(parent)
+        self.counts = counts  # show "Title (n)" in the category list
         self.search = QLineEdit()
         self.search.setPlaceholderText(placeholder)
         self.search.setClearButtonEnabled(True)
         self.search.textChanged.connect(self.filter)
+        self.search_row = QHBoxLayout()  # callers may add widgets next to the search box
+        self.search_row.addWidget(self.search, 1)
         self.no_match = QLabel("Nothing matches your search.")
         self.no_match.setVisible(False)
         self.nav = QListWidget()
-        self.nav.setMaximumWidth(200)
+        self.nav.setMaximumWidth(220)
         self.nav.currentRowChanged.connect(lambda _r: self._show_current())
-        self._counts: list[int] = []
-        self.page = QWidget()
-        self.col = QVBoxLayout(self.page)
-        self.col.addStretch()
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
-        self.scroll.setWidget(self.page)
         self.sections: list[tuple[str, QWidget]] = []
+        self._rows: list[list[str]] = []  # per section: lower-case search text of each form row
+        self._counts: list[int] = []
+        self._new_page()
         right = QVBoxLayout()
-        right.addWidget(self.search)
+        right.addLayout(self.search_row)
         right.addWidget(self.no_match)
         right.addWidget(self.scroll, 1)
         body = QHBoxLayout(self)
@@ -135,11 +136,44 @@ class SectionedPage(QWidget):
         body.addWidget(self.nav)
         body.addLayout(right, 1)
 
-    def add(self, title: str, box: QWidget) -> None:
+    def _new_page(self) -> None:
+        self.page = QWidget()
+        self.col = QVBoxLayout(self.page)
+        self.col.addStretch()
+        old = self.scroll.takeWidget()
+        if old is not None:
+            old.deleteLater()
+        self.scroll.setWidget(self.page)
+
+    def clear(self) -> None:
+        """Remove every category (e.g. to rebuild them after reloading data)."""
+        self.nav.blockSignals(True)
+        self.nav.clear()
+        self.nav.blockSignals(False)
+        self.sections, self._rows, self._counts = [], [], []
+        self._new_page()
+
+    def add(self, title: str, box: QWidget, texts: list[str] | None = None, refilter: bool = True) -> None:
+        """Add a category. `texts`: search text per form row (default: the row's visible words)."""
+        from PySide6.QtWidgets import QFormLayout
         self.col.insertWidget(self.col.count() - 1, box)  # before the stretch
         self.sections.append((title, box))
-        self.nav.addItem(title)
-        self.filter()
+        item_title = title
+        self.nav.addItem(item_title)
+        self.nav.item(self.nav.count() - 1).setData(0x0100, title)  # Qt.UserRole: the plain title
+        form = box.layout()
+        if texts is None:
+            texts = []
+            if isinstance(form, QFormLayout):
+                for row in range(form.rowCount()):
+                    items = [form.itemAt(row, role) for role in (QFormLayout.LabelRole, QFormLayout.FieldRole,
+                                                                 QFormLayout.SpanningRole)]
+                    texts.append(" ".join(t for it in items if it for t in self._texts(it.widget() or it.layout())))
+            else:
+                texts = [" ".join(self._texts(box))]
+        self._rows.append([(title + " " + t).lower() for t in texts])
+        if refilter:
+            self.filter()
 
     @staticmethod
     def _own_texts(w) -> list[str]:
@@ -179,28 +213,21 @@ class SectionedPage(QWidget):
     def filter(self, *_):
         from PySide6.QtWidgets import QFormLayout
         words = self.search.text().lower().split()
-        any_shown = False
         counts: list[int] = []
         for i, (title, box) in enumerate(self.sections):
             form = box.layout()
-            shown = 0
-            if isinstance(form, QFormLayout):
-                for row in range(form.rowCount()):
-                    label = form.itemAt(row, QFormLayout.LabelRole)
-                    field = form.itemAt(row, QFormLayout.FieldRole)
-                    span = form.itemAt(row, QFormLayout.SpanningRole)
-                    hay = " ".join([title] + [t for it in (label, field, span) if it
-                                              for t in self._texts(it.widget() or it.layout())]).lower()
-                    hit = all(w in hay for w in words)
+            hits = [all(w in t for w in words) for t in self._rows[i]]
+            if isinstance(form, QFormLayout) and len(hits) == form.rowCount():
+                for row, hit in enumerate(hits):
                     form.setRowVisible(row, hit)
-                    shown += hit
-            else:
-                shown = int(all(w in (title + " " + " ".join(self._texts(box))).lower() for w in words))
+            shown = sum(hits)
             counts.append(shown)
-            self.nav.item(i).setHidden(shown == 0)
-            any_shown |= shown > 0
+            item = self.nav.item(i)
+            item.setHidden(shown == 0)
+            if self.counts:
+                item.setText(f"{title} ({shown})")
         self._counts = counts
-        self.no_match.setVisible(bool(words) and not any_shown)
+        self.no_match.setVisible(bool(words) and not any(counts))
         select_first_visible(self.nav)
         self._show_current()
 
@@ -209,6 +236,10 @@ class SectionedPage(QWidget):
         for i, (t, _box) in enumerate(self.sections):
             if t == title and not self.nav.item(i).isHidden():
                 self.nav.setCurrentRow(i)
+
+    def current_title(self) -> str | None:
+        row = self.nav.currentRow()
+        return self.sections[row][0] if 0 <= row < len(self.sections) else None
 
     def _show_current(self) -> None:
         cur = self.nav.currentRow()

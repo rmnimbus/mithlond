@@ -1069,6 +1069,11 @@ class GamePrefsTests(unittest.TestCase):
             tab.save()
             self.assertIn("TextureDetail=VeryLow", (Path(d) / "UserPreferences.ini").read_text())
             self.assertTrue(tab.restore_btn.isEnabled())
+            self.assertFalse(tab._timer.isActive())  # never shown: no process polling
+            tab.show()
+            self.assertTrue(tab._timer.isActive())
+            tab.hide()
+            self.assertFalse(tab._timer.isActive())
             with mock.patch.object(procs, "game_clients", lambda: ["game"]):
                 tab._check_game()
                 self.assertFalse(tab.save_btn.isEnabled())
@@ -1226,6 +1231,14 @@ class LayoutTests(unittest.TestCase):
 
 
 class DesktopEntryTests(unittest.TestCase):
+    def test_finished_task_after_window_closed(self):
+        from mithlond.ui import workers
+        gone = mock.Mock(emit=mock.Mock(side_effect=RuntimeError("Signal source has been deleted")))
+        sig = mock.Mock(done=gone, error=gone, progress=gone)
+        workers._Task(lambda: 42, sig, False).run()  # must not raise
+        workers._Task(lambda: 1 / 0, sig, False).run()
+        self.assertEqual(gone.emit.call_count, 2)
+
     def test_entry_follows_the_appimage(self):
         from mithlond import desktopentry as de
         with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"XDG_DATA_HOME": d}):

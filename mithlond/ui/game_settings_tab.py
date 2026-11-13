@@ -7,14 +7,14 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget,
-    QMessageBox, QPushButton, QScrollArea, QSlider, QSpinBox, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+    QMessageBox, QPushButton, QSlider, QSpinBox, QVBoxLayout, QWidget,
 )
 
 from .. import gameprefs, procs
 from ..config import DOCS_FOLDER_NAME, Settings
 from .context import AppContext
-from .widgets import select_first_visible
+from .widgets import SectionedPage
 
 
 def prefs_file(s: Settings) -> Path | None:
@@ -155,19 +155,9 @@ class GameSettingsTab(QWidget):
         buttons.addWidget(self.reload_btn)
         buttons.addWidget(self.open_btn)
 
-        # live search over every category; categories on the left jump to their box on the right
-        self.search = QLineEdit()
-        self.search.setPlaceholderText("Search settings, e.g. shadow, volume, scale, fps…")
-        self.search.setClearButtonEnabled(True)
-        self.search.textChanged.connect(self._filter)
-        self.no_match = QLabel("No setting matches your search.")
-        self.no_match.setVisible(False)
-        self.nav = QListWidget()
-        self.nav.setMaximumWidth(220)
-        self.nav.currentRowChanged.connect(lambda _r: self._show_current())
-        self._counts: dict[str, int] = {}
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
+        # categories on the left, the selected one on the right, live search (shared SectionedPage)
+        self.page = SectionedPage("Search settings, e.g. shadow, volume, scale, fps…", counts=True)
+        self.search, self.nav, self.no_match = self.page.search, self.page.nav, self.page.no_match
         self.groups: dict[str, tuple[QGroupBox, QFormLayout, list[Field]]] = {}
         self.preset = QComboBox()
         self.preset.addItem("Graphics preset…")
@@ -176,20 +166,11 @@ class GameSettingsTab(QWidget):
                                "faster computers. Your resolution, window mode, sound, interface and controls stay as\n"
                                "they are. Nothing is written until you press Save changes.")
         self.preset.activated.connect(self._apply_preset)
-        top = QHBoxLayout()
-        top.addWidget(self.search, 1)
-        top.addWidget(self.preset)
-        right = QVBoxLayout()
-        right.addLayout(top)
-        right.addWidget(self.no_match)
-        right.addWidget(self.scroll, 1)
-        body = QHBoxLayout()
-        body.addWidget(self.nav)
-        body.addLayout(right, 1)
+        self.page.search_row.addWidget(self.preset)
         lay = QVBoxLayout(self)
         lay.addWidget(self.where)
         lay.addWidget(self.state)
-        lay.addLayout(body, 1)
+        lay.addWidget(self.page, 1)
         lay.addLayout(buttons)
 
         self.save_btn.clicked.connect(self.save)
@@ -199,6 +180,7 @@ class GameSettingsTab(QWidget):
         self.open_btn.clicked.connect(lambda: self.path and QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.path.parent))))
         ctx.settings_changed.connect(self.load)
         ctx.games_changed.connect(lambda _n: self._check_game())
+        # Checks whether a game client runs (it rewrites the file on exit) only while this tab is shown.
         self._timer = QTimer(self)
         self._timer.setInterval(4000)
         self._timer.timeout.connect(self._check_game)
@@ -207,14 +189,9 @@ class GameSettingsTab(QWidget):
     # ---- loading -------------------------------------------------------------------------
     def load(self) -> None:
         self.path = prefs_file(self.ctx.settings)
-        keep = self.nav.currentItem().data(Qt.UserRole) if self.nav.currentItem() else None
-        self.nav.blockSignals(True)
-        self.nav.clear()
-        self.nav.blockSignals(False)
+        keep = self.page.current_title()
+        self.page.clear()
         self.groups = {}
-        old = self.scroll.takeWidget()
-        if old is not None:
-            old.deleteLater()
         self.fields = []
         if not self.path or not self.path.is_file():
             self.where.setText("No game settings file yet. The game creates <b>UserPreferences.ini</b> in the "
@@ -227,8 +204,6 @@ class GameSettingsTab(QWidget):
         by_cat: dict[str, list[gameprefs.Pref]] = {}
         for p in gameprefs.visible(values):
             by_cat.setdefault(p.category, []).append(p)
-        page = QWidget()
-        col = QVBoxLayout(page)
         for cat in gameprefs.CATEGORIES:
             prefs = by_cat.get(cat)
             if not prefs:
@@ -236,51 +211,21 @@ class GameSettingsTab(QWidget):
             box = QGroupBox(cat.replace("&", "&&"))
             form = QFormLayout(box)
             form.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
-            fields = []
-            for p in prefs:
-                f = Field(p, values[p.id], self._changed)
-                fields.append(f)
+            fields = [Field(p, values[p.id], self._changed) for p in prefs]
+            for f in fields:
                 form.addRow(f.label, f.widget)
             self.fields += fields
             self.groups[cat] = (box, form, fields)
-            col.addWidget(box)
-            self.nav.addItem(cat)
-        col.addStretch()
-        self.scroll.setWidget(page)
-        for i in range(self.nav.count()):  # stay on the category that was open before a reload
-            if self.nav.item(i).text() == keep:
-                self.nav.setCurrentRow(i)
-        self._filter()
+            # search text: the readable name, the name in the file, its section and description
+            self.page.add(cat, box, [" ".join((f.pref.label, f.pref.key, f.pref.section, f.pref.tip,
+                                               gameprefs.pretty(f.pref.key))) for f in fields], refilter=False)
+        if keep:
+            self.page.select(keep)
+        self.page.filter()
         self._check_game()
-        self._timer.start()
-
-    # ---- search and navigation ----------------------------------------------------------
-    @staticmethod
-    def _haystack(f: Field) -> str:
-        p = f.pref
-        return " ".join((p.label, p.key, p.section, p.category, p.tip, gameprefs.pretty(p.key))).lower()
 
     def _filter(self, *_):
-        """Show only settings whose name, file key, category or description contain every typed word."""
-        words = self.search.text().lower().split()
-        total = 0
-        for i in range(self.nav.count()):
-            item = self.nav.item(i)
-            cat = item.data(Qt.UserRole) or item.text()
-            item.setData(Qt.UserRole, cat)
-            box, form, fields = self.groups[cat]
-            shown = 0
-            for row, f in enumerate(fields):
-                hit = all(w in self._haystack(f) for w in words)
-                form.setRowVisible(row, hit)
-                shown += hit
-            self._counts[cat] = shown
-            item.setHidden(shown == 0)
-            item.setText(f"{cat} ({shown})")
-            total += shown
-        self.no_match.setVisible(bool(words) and total == 0)
-        select_first_visible(self.nav)
-        self._show_current()
+        self.page.filter()
 
     def _apply_preset(self, index: int) -> None:
         if index <= 0:
@@ -301,18 +246,16 @@ class GameSettingsTab(QWidget):
                            "(bold). Check them, then Save changes." if changed else
                            f"Your settings already match the {name} preset.")
 
-    def _show_current(self) -> None:
-        """Only the selected category's box is shown (with its search matches)."""
-        item = self.nav.currentItem()
-        cur = item.data(Qt.UserRole) if item else None
-        for cat, (box, _form, _fields) in self.groups.items():
-            box.setVisible(cat == cur and self._counts.get(cat, 0) > 0)
-        self.scroll.verticalScrollBar().setValue(0)
-
     def showEvent(self, e):
         super().showEvent(e)
         if self.path != prefs_file(self.ctx.settings):
             self.load()
+        self._check_game()
+        self._timer.start()
+
+    def hideEvent(self, e):
+        super().hideEvent(e)
+        self._timer.stop()
 
     # ---- state ---------------------------------------------------------------------------
     def _changes(self) -> dict[str, str]:

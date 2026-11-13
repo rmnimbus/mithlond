@@ -76,4 +76,11 @@ Songbook. Thanks also to [lembas](https://github.com/mawilms/lembas),
 [Maestro](https://github.com/NikolaiVChr/maestro), [BruTE](https://github.com/bruzo/BruTE-) and
 [WAN Songbook Filler](https://lotro.hanft.de/wansongbookfiller/).
 
+**Bundled in the AppImage:** [umu-launcher](https://github.com/Open-Wine-Components/umu-launcher)'s `umu-run`
+(GPL-3.0; the unmodified release zipapp, source at that link), Python and Qt for Python (PySide6, LGPL-3.0), and
+X11/Wayland support libraries from [Debian 11](https://www.debian.org/) (sources at
+[sources.debian.org](https://sources.debian.org/)). The Visual effects tab drives
+[vkBasalt](https://github.com/DadSchoorse/vkBasalt), [gamescope](https://github.com/ValveSoftware/gamescope) and
+[DXVK](https://github.com/doitsujin/dxvk) when they are installed; they are not bundled.
+
 Not affiliated with Standing Stone Games or Daybreak. The Lord of the Rings Online is a trademark of its owners.
