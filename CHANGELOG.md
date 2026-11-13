@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.13
 
 - The **Companion** tab is now called **LotRO Companion**, the name its author uses, and its buttons, options and
   messages say "LotRO Companion" too.
