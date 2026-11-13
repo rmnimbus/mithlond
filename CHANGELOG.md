@@ -13,6 +13,12 @@
 - **Install the game:** with no game folder yet, **Install the game…** (Play tab; also **Install…** in
   Settings → Locations) downloads the official installer from lotro.com and installs the game silently into
   the Wine/Proton prefix, then sets the game folder. **Detect** also looks in the configured prefix.
+  Tested with the real installer in a fresh prefix: it installs the launcher and patcher in seconds, and
+  **Check for game updates** then downloads the game. Until that's done, Play and Settings say so instead of
+  calling the folder wrong.
+- **Get plugins / Skins: Curated list or All lotrointerface items.** The curated list (the add-ons collected
+  for OneLauncher and LOTRO Plugin Compendium) is the default; *All lotrointerface items* shows everything
+  posted on the site, with a note that some items may not install properly or may not be add-ons at all.
 - **My LOTRO account** button on the Play tab opens the Standing Stone Games account page.
 - **Layouts:** move and resize in steps of 1, 5 or 10 px, and optionally **snap to other windows' edges**
   (screen edges always snap). Typed pixel values are used exactly. Both choices are remembered.

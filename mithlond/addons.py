@@ -62,6 +62,7 @@ class RemoteAddon:
     size: int
     url: str
     site_only: bool = False  # from the site catalogue: version/description load on demand
+    curated: bool = True  # on a curated list (OneLauncher / Plugin Compendium); False = only in the site catalogue
 
     @property
     def info_url(self) -> str:
@@ -152,7 +153,7 @@ def fetch_all(kind: str, force: bool = False, progress=None) -> list[RemoteAddon
         return listed
     extra = [RemoteAddon(id=e.id, kind=kind, name=e.name, author=e.author, version="", updated=e.updated,
                          downloads=e.downloads, category=e.category, description="", file=f"{e.id}.zip",
-                         size=e.size, url=DOWNLOAD_URL.format(id=e.id), site_only=True)
+                         size=e.size, url=DOWNLOAD_URL.format(id=e.id), site_only=True, curated=False)
              for e in entries if e.id not in have and (e.category in catalog.SKIN_CATEGORIES) == want_skin]
     return listed + extra
 

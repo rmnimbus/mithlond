@@ -1582,6 +1582,37 @@ class PluginsAndKeysUITests(unittest.TestCase):
             app.processEvents()
 
 
+class AddonSourceToggleTests(unittest.TestCase):
+    def test_curated_and_all(self):
+        from PySide6.QtWidgets import QApplication
+        from mithlond.addons import RemoteAddon
+        from mithlond.ui.addons_tab import AddonPane
+        from mithlond.ui.context import AppContext
+        app = QApplication.instance() or QApplication([])
+        mk = lambda i, curated: RemoteAddon(id=str(i), kind="plugin", name=f"Addon {i}", author="x", version="1",
+                                            updated=0, downloads=0, category="Other", description="", file="",
+                                            size=0, url="", site_only=not curated, curated=curated)
+        with tempfile.TemporaryDirectory() as d:
+            ctx = AppContext(Settings(documents_dir=d))
+            pane = AddonPane(ctx, "plugin")
+            pane.hide_outdated.setChecked(False)
+            pane.remote = [mk(1, True), mk(2, True), mk(3, False)]
+            pane.rescan()
+            self.assertEqual(pane.source.currentIndex(), 0)  # curated by default
+            self.assertEqual(pane.table.rowCount(), 2)
+            self.assertTrue(pane.all_note.isHidden())
+            pane.source.setCurrentIndex(1)
+            self.assertEqual(pane.table.rowCount(), 3)
+            self.assertFalse(pane.all_note.isHidden())
+            self.assertIn("may not install properly", pane.all_note.text())
+            self.assertTrue(ctx.settings.addons_show_all)  # remembered
+            music = AddonPane(ctx, "music")
+            self.assertTrue(music.source.isHidden())
+            for w in (pane, music):
+                w.deleteLater()
+            app.processEvents()
+
+
 class SnapAndInstallTests(unittest.TestCase):
     def test_snap_axis_and_size(self):
         from mithlond.ui.layout_tab import snap_axis, snap_size
@@ -1608,6 +1639,16 @@ class SnapAndInstallTests(unittest.TestCase):
             g.mkdir(parents=True)
             (g / "LotroLauncher.exe").write_bytes(b"MZ")
             self.assertEqual(gameinstall.installed_in(pfx), [g])  # launcher only: still found
+            from mithlond import config
+            (g / "lotro.launcherconfig").write_text("<appSettings/>")
+            (g / "patchclient.dll").write_bytes(b"MZ")
+            self.assertTrue(config.needs_game_download(g))  # what the real installer leaves (tested 2026-11-13)
+            ok, msg = config.check_game_dir(g)
+            self.assertFalse(ok)
+            self.assertIn("Check for game updates", msg)
+            (g / "lotroclient.exe").write_bytes(b"MZ")
+            self.assertFalse(config.needs_game_download(g))
+            self.assertTrue(config.check_game_dir(g)[0])
             self.assertIn("/DIR=C:\\Program Files (x86)\\StandingStoneGames\\The Lord of the Rings Online",
                           gameinstall.SILENT_ARGS)
 

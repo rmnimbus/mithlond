@@ -70,12 +70,26 @@ class AddonPane(QWidget):
         self.hide_outdated.setChecked(True)
         self.category = QComboBox()
         self.category.addItem("All categories")
+        self.source = QComboBox()
+        self.source.addItem("Curated list", False)
+        self.source.addItem("All lotrointerface items", True)
+        self.source.setToolTip("Curated list: the add-ons collected for OneLauncher and LOTRO Plugin Compendium.\n"
+                               "All items: everything posted in lotrointerface.com's download sections.")
+        self.source.setCurrentIndex(1 if ctx.settings.addons_show_all else 0)
+        self.source.setVisible(kind != "music")  # music packs come from one curated list only
+        self.all_note = QLabel(
+            "Showing every item posted in lotrointerface.com's download sections, not just the curated list. "
+            "Mithlond lists them all without checking them: some may not install properly, and some may not be "
+            "add-ons at all (screenshots, tools, old or test uploads). Items you have installed always show.")
+        self.all_note.setWordWrap(True)
+        self.all_note.setProperty("subtle", True)
         self.refresh = QPushButton("Refresh")
         self.refresh.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         self.from_file = QPushButton("Install from file…")
         self.from_link = QPushButton("Install from link…")
         self.from_link.setToolTip("Install any addon from its lotrointerface.com page, even one that isn't in this list")
         top = QHBoxLayout()
+        top.addWidget(self.source)
         top.addWidget(self.search, 2)
         top.addWidget(self.show_filter)
         top.addWidget(self.hide_outdated)
@@ -120,9 +134,11 @@ class AddonPane(QWidget):
 
         lay = QVBoxLayout(self)
         lay.addLayout(top)
+        lay.addWidget(self.all_note)
         lay.addWidget(split, 1)
         lay.addLayout(bottom)
 
+        self.source.currentIndexChanged.connect(self._source_changed)
         self.search.textChanged.connect(self.fill)
         self.show_filter.currentIndexChanged.connect(self.fill)
         self.hide_outdated.toggled.connect(self.fill)
@@ -138,6 +154,14 @@ class AddonPane(QWidget):
         self.web_btn.clicked.connect(self._open_web)
         self.folder_btn.clicked.connect(lambda: self.target() and open_path(self.target()))
         self._selection()
+
+    def show_all(self) -> bool:
+        return self.kind != "music" and bool(self.source.currentData())
+
+    def _source_changed(self, *_):
+        self.ctx.settings.addons_show_all = self.show_all()
+        self.ctx.settings.save()
+        self.fill()
 
     # ---- data -------------------------------------------------------------------------
     def target(self) -> Path | None:
@@ -228,11 +252,15 @@ class AddonPane(QWidget):
         q = self.search.text().strip().lower()
         show = self.show_filter.currentIndex()
         cat = self.category.currentText() if self.category.currentIndex() > 0 else None
+        everything = self.show_all()
+        self.all_note.setVisible(everything)
         self.table.setSortingEnabled(False)
         self.table.setRowCount(0)
         gold, green = QColor("#e0bd72"), QColor("#8fc77f")
         for idx, row in enumerate(self.rows):
             r, i = row.remote, row.installed
+            if r and not r.curated and not i and not everything:
+                continue
             if show == 1 and not i or show == 2 and not row.update or show == 3 and i:
                 continue
             if cat and (not r or r.category != cat):

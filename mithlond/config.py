@@ -123,6 +123,9 @@ class Settings:
     check_updates_on_start: bool = True
     skipped_version: str = ""  # "Skip this version" on the update banner
 
+    # Get plugins / Skins: False = curated lists only, True = everything in lotrointerface.com's catalogue
+    addons_show_all: bool = False
+
     # Layouts tab: mouse moves in steps of 1/5/10 px; snap to other windows' edges
     layout_grid: int = 1
     layout_snap_windows: bool = False
@@ -255,12 +258,24 @@ def find_case_insensitive(base: Path, rel: str) -> Path | None:
 
 # ---- validation ------------------------------------------------------------
 
+NOT_DOWNLOADED = ("Only the launcher is installed so far: press 'Check for game updates' on the Play tab to "
+                  "download the game")
+
+
+def needs_game_download(path: Path) -> bool:
+    """A fresh install: the launcher, its config and the patcher are there, the game client isn't yet."""
+    return (path.is_dir() and any(path.glob("*.launcherconfig")) and (path / "patchclient.dll").exists()
+            and not any(find_case_insensitive(path, c) for c in ("lotroclient.exe", "x64/lotroclient64.exe")))
+
+
 def check_game_dir(path: Path) -> tuple[bool, str]:
     """Return (ok, message) describing whether `path` looks like a LOTRO install."""
     if not path.is_dir():
         return False, "Folder does not exist"
     clients = [c for c in ("lotroclient.exe", "x64/lotroclient64.exe") if find_case_insensitive(path, c)]
     has_cfg = any(path.glob("*.launcherconfig"))
+    if not clients and needs_game_download(path):
+        return False, NOT_DOWNLOADED
     if not clients:
         return False, "No lotroclient.exe found here"
     if not has_cfg:

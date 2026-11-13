@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import config, gameinstall, gls, keystore, procs, runner
-from ..config import Account, check_game_dir
+from ..config import Account, check_game_dir, needs_game_download
 from .context import AppContext
 from .game_install import install_game
 from .news_panel import NewsPanel
@@ -261,7 +261,9 @@ class PlayTab(QWidget):
 
     def load_worlds(self, force: bool = False) -> None:
         game = self.ctx.settings.game_path
-        if not game or not check_game_dir(game)[0]:
+        if game and needs_game_download(game):
+            self.status.setText("The game isn't downloaded yet: press 'Check for game updates' below.")
+        elif not game or not check_game_dir(game)[0]:
             self.status.setText("Set your LOTRO folder on the Settings tab.")
             return
         if force:
@@ -415,6 +417,10 @@ class PlayTab(QWidget):
         s = self.ctx.settings
         game = s.game_path
         ok, msg = check_game_dir(game) if game else (False, "not set")
+        if not ok and game and needs_game_download(game):
+            QMessageBox.information(self, "Game not downloaded yet", "Only the game's launcher is installed so far. "
+                                    "Press 'Check for game updates' to download the game (many GB), then play.")
+            return
         if not ok:
             QMessageBox.warning(self, "Game folder", f"Your LOTRO folder is not set up correctly ({msg}).\n"
                                 "Choose it on the Settings tab.")
@@ -564,7 +570,7 @@ class PlayTab(QWidget):
     def start_patch(self) -> None:
         s = self.ctx.settings
         game = s.game_path
-        if not game or not check_game_dir(game)[0]:
+        if not game or not (check_game_dir(game)[0] or needs_game_download(game)):
             return
         if self.ctx.games:
             QMessageBox.information(self, "Patching", "Close the game before patching.")
@@ -617,7 +623,8 @@ class PlayTab(QWidget):
     def _show_install(self) -> None:
         """'Install the game…' only while there's no usable game folder."""
         s = self.ctx.settings
-        self.install_btn.setVisible(not (s.game_dir and check_game_dir(s.game_path)[0]))
+        game = s.game_path if s.game_dir else None
+        self.install_btn.setVisible(not (game and (check_game_dir(game)[0] or needs_game_download(game))))
 
     def run_official_launcher(self) -> None:
         s = self.ctx.settings
