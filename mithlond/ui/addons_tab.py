@@ -1,4 +1,5 @@
-"""Downloads tab: browse, install, update and remove plugins, skins and music packs from lotrointerface.com."""
+"""Browse, install, update and remove plugins, skins and music packs from lotrointerface.com (one pane per kind;
+used on the Plugins tab and in the Music tab's Music packs section)."""
 
 from __future__ import annotations
 
@@ -11,7 +12,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView, QCheckBox, QComboBox, QFileDialog, QHBoxLayout, QInputDialog, QHeaderView, QLabel, QLineEdit, QMessageBox,
-    QProgressBar, QPushButton, QSplitter, QStyle, QTableWidget, QTableWidgetItem, QTabWidget, QTextBrowser,
+    QProgressBar, QPushButton, QSplitter, QStyle, QTableWidget, QTableWidgetItem, QTextBrowser,
     QVBoxLayout, QWidget,
 )
 
@@ -463,27 +464,3 @@ class AddonPane(QWidget):
             QMessageBox.warning(self, "Uninstall", "\n".join(errors))
         if self.kind == "music":
             self.ctx.music_changed.emit()
-
-
-class AddonsTab(QWidget):
-    def __init__(self, ctx: AppContext, parent=None):
-        super().__init__(parent)
-        self.tabs = QTabWidget()
-        self.panes = {k: AddonPane(ctx, k) for k in ("plugin", "skin", "music")}
-        for k, p in self.panes.items():
-            self.tabs.addTab(p, KIND_LABEL[k])
-        lay = QVBoxLayout(self)
-        lay.addWidget(self.tabs)
-        self._loaded: set[str] = set()
-        self.tabs.currentChanged.connect(self._ensure_loaded)
-        ctx.settings_changed.connect(lambda: [p.rescan() for k, p in self.panes.items() if k in self._loaded])
-
-    def _ensure_loaded(self) -> None:
-        k = list(self.panes)[self.tabs.currentIndex()]
-        if k not in self._loaded:
-            self._loaded.add(k)
-            self.panes[k].load()
-
-    def showEvent(self, e):  # load lazily the first time the tab is opened
-        super().showEvent(e)
-        self._ensure_loaded()

@@ -17,8 +17,9 @@ alongside the game.
 | **In game settings** | The game's own options (graphics, display, sound, interface, controls, voice chat, performance) in categories, edited while the game is closed. Saves only what you change, with a backup. |
 | **Visual effects** | vkBasalt sharpening/antialiasing/ReShade shaders, gamescope upscaling (FSR, NIS) and display options, DXVK options (forced anisotropic filtering, frame latency, VSync). |
 | **Layouts** | Edit saved interface layouts (`/ui layout save`/`load`): drag and resize windows on a screen-sized canvas, interface options, chat colors and sizes. |
-| **Downloads** | Plugins, skins and music packs from [lotrointerface.com](https://www.lotrointerface.com/). Browse, search, install (dependencies included), update and uninstall. It works alongside LOTRO Plugin Compendium and picks up plugins you installed by hand. |
-| **Music** | Import `.abc` songs (files, folders, zips, drag and drop) and browse them by title and part count. Keeps the **Songbook** plugin's song list up to date. Downloads and starts **Maestro** and **WAN Songbook Filler**, and links to **BruTE**. |
+| **Key bindings** | Every key binding in the game, searchable, with keys that do two things marked. Change, add or remove keys while the game is closed, and save or load whole key binding files. |
+| **Plugins** | **Get plugins**: plugins and skins from [lotrointerface.com](https://www.lotrointerface.com/); browse, search, install (dependencies included), update and uninstall, alongside LOTRO Plugin Compendium and plugins installed by hand. **Load plugins**: which characters auto-load which plugin, per server, with named sets. **Plugin errors**: the Lua errors the game logged. |
+| **Music** | Import `.abc` songs (files, folders, zips, drag and drop) and browse them by title and part count. Music packs from lotrointerface.com. Keeps the **Songbook** plugin's song list up to date. Downloads and starts **Maestro** and **WAN Songbook Filler**, and links to **BruTE**. |
 | **LotRO Companion** | Downloads, updates and starts **LotRO Companion**, and can open and close it along with the game. |
 | **Settings** | Game, documents, plugins and downloads folders. Runner (system Wine or any Proton) and prefix, environment variables, and game options (gamescope, MangoHud, GameMode, DXVK HUD…). |
 

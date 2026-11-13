@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from .. import runner, songs, tools
 from ..config import Settings
+from .addons_tab import AddonPane
 from .context import AppContext
 from .widgets import Collapsible, PathPicker, open_path, open_url, subtle
 from .workers import run_task
@@ -104,6 +105,13 @@ class SongsTab(QWidget):
         self.tools_section = Collapsible("Music tools (Maestro, BruTE, WAN Songbook Filler)", tools_body)
         lay.addWidget(self.tools_section)
 
+        self.packs = AddonPane(ctx, "music")
+        self.packs.setMinimumHeight(380)
+        self.packs_section = Collapsible("Music packs (song collections from lotrointerface.com)", self.packs)
+        self.packs_section.toggle.toggled.connect(self._packs_opened)
+        lay.addWidget(self.packs_section)
+        self._packs_loaded = False
+
         self.import_files.clicked.connect(self._pick_files)
         self.import_dir.clicked.connect(self._pick_dir)
         self.new_folder.clicked.connect(self._new_folder)
@@ -115,6 +123,11 @@ class SongsTab(QWidget):
         ctx.music_changed.connect(self._music_changed)
         ctx.settings_changed.connect(self.refresh)
         self.refresh()
+
+    def _packs_opened(self, open_: bool) -> None:
+        if open_ and not self._packs_loaded:  # the list is fetched only when the section is first opened
+            self._packs_loaded = True
+            self.packs.load()
 
     def music_dir(self) -> Path | None:
         return self.ctx.settings.subdir("Music")
@@ -164,7 +177,7 @@ class SongsTab(QWidget):
         accs = songbook_accounts(self.ctx.settings)
         self.status.setText(f"{len(found)} songs in {md}")
         if not songbook_installed(self.ctx.settings):
-            self.hint.setText("Tip: the Songbook plugin (Downloads → Plugins, search “Songbook”) lets you pick and "
+            self.hint.setText("Tip: the Songbook plugin (Plugins → Get plugins, search “Songbook”) lets you pick and "
                               "play these songs in game.")
         elif not accs:
             self.hint.setText("Log in once (or add your account on the Play tab) so the Songbook list can be written.")

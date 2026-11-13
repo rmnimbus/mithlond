@@ -206,6 +206,7 @@ What's inside:
   game/lotroclient.log     the game client's own log from the last start
   game/UserPreferences.txt the game's settings (without account and world history)
   plugins.txt              installed plugins and their versions
+  game/Script.log          plugin (Lua) errors the game logged
   effects/                 the vkBasalt and DXVK settings Mithlond writes (if used)
   companion.log            LotRO Companion's newest log (if any)
   proton.log               Proton's debug log (if "Proton debug log" was on)
@@ -240,6 +241,9 @@ def export(s: Settings, dest: Path) -> Path:
         files["game/UserPreferences.txt"] = red(f"# {pf}\n" + "".join(
             f"{k} = {v}\n" for k, v in values.items() if not gameprefs.hidden(*k.split(".", 1))))
     files["plugins.txt"] = _plugins(s)
+    script_log = s.docs_path / "Script.log" if s.docs_path else None
+    if script_log and script_log.is_file():
+        files["game/Script.log"] = red(f"# {script_log}\n" + _tail(script_log))
     for p in (effects.VKBASALT_CONF, effects.DXVK_CONF):
         if p.is_file():
             files[f"effects/{p.name}"] = red(p.read_text(errors="replace"))

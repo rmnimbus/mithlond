@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+- **New Key bindings tab:** every key binding in the game, searchable by action or key, with keys that do two
+  things in the same place marked in red. Change keys (keyboard with Shift/Ctrl/Alt, middle and side mouse
+  buttons), add a second key, remove keys, and **save or load whole key binding files**. Saving keeps every
+  unchanged line exactly as the game wrote it, with a backup; not possible while the game runs.
+- **Downloads is now the Plugins tab:** **Get plugins** (as before), **Load plugins**, **Plugin errors** and
+  **Skins**.
+  - **Load plugins** sets which characters auto-load each plugin, per server: click a plugin and tick *All
+    characters* or the characters you want. Named **sets** can be saved and loaded. Characters you haven't
+    played on this computer can be added by name. Plugins whose authors say not to auto-load them are hidden
+    unless asked for.
+  - **Plugin errors** lists the Lua errors the game wrote to Script.log, per plugin. Export logs now includes
+    Script.log too.
+- **Music packs** moved to the Music tab, as a section that's closed by default.
+- The user guide notes that `/ui layout load` also applies a layout's interface options (checked in game).
+
 ## 1.4.13
 
 - The **Companion** tab is now called **LotRO Companion**, the name its author uses, and its buttons, options and

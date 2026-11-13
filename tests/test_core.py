@@ -1338,6 +1338,244 @@ class LayoutTests(unittest.TestCase):
             app.processEvents()
 
 
+KEYMAP_SAMPLE = (
+    "# comment header\r\n\"User Defined Keymap\" [ 00000000-0000-0000-0000-000000000000 ]\r\n\r\n"
+    "MetaKeys\r\n[\r\n  1 [ 0 DIK_LSHIFT ]\r\n  1 [ 0 DIK_RSHIFT ]\r\n  2 [ 0 DIK_LCONTROL ]\r\n  3 [ 0 DIK_LALT ]\r\n]\r\n\r\n"
+    "Bindings\r\n[\r\n  Main\r\n  [\r\n"
+    "    SHOW_NAMES [ User [ 0 DIK_N ] 0x00000002 ]\r\n"
+    "    ToggleMapPanel [ Old [ 0 DIK_M ] ]\r\n"
+    "    QUICKSLOT_18 [ User [ 0 DIK_Q ] 0x00000001 ]\r\n"
+    "    ItemLinkToChat [ Old [ 1 DIMOFS_BUTTON1 ] 0x00000002 Up/Tap ]\r\n"
+    "    CameraInstantMoveToward [ Old [ 1 DIMOFS_Z AxisPositive ] ]\r\n"
+    "    DoNothing [ User [ 0 DIK_6 ] 0x00000002 ]\r\n"
+    "  ]\r\n\r\n  MapPanel\r\n\r\n  MusicUI\r\n  [\r\n    ExitMusicMode [ Old [ 0 DIK_ESCAPE ] ]\r\n  ]\r\n]\r\n")
+
+PLUGINOPTIONS_SAMPLE = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\r\n<PluginOptions>\r\n\r\n  <AutoloadOptions>\r\n'
+    '    <Plugin AllCharacters="true" Name="Wallet"/>\r\n'
+    '    <Plugin AllCharacters="false" Name="MinstrelBuff II">\r\n      <Character Name="Realmonster"/>\r\n    </Plugin>\r\n'
+    '  </AutoloadOptions>\r\n\r\n  <ScalingOptions>\r\n    <Plugin Name="Wallet" UseScaling="False"/>\r\n'
+    '  </ScalingOptions>\r\n\r\n</PluginOptions>\r\n')
+
+
+class KeymapTests(unittest.TestCase):
+    def test_parse_roundtrip_and_names(self):
+        from mithlond import keymap
+        km = keymap.Keymap.parse(KEYMAP_SAMPLE)
+        self.assertEqual(km.render(), KEYMAP_SAMPLE)  # byte for byte, CRLF kept
+        self.assertEqual(len(km.bindings), 7)
+        self.assertEqual(km.contexts(), ["Main", "MusicUI"])  # MapPanel has no block
+        names = [km.chord_name(b) for b in km.bindings]
+        self.assertEqual(names[:5], ["Ctrl+N", "M", "Shift+Q", "Ctrl+Right mouse (release)", "Mouse wheel up"])
+        self.assertEqual(keymap.action_name("QUICKSLOT_18"), "Quickslot 18")
+        self.assertEqual(keymap.action_name("ToggleMapPanel"), "Toggle map panel")
+        self.assertEqual(keymap.context_name("MusicUI"), "Music mode")
+        self.assertEqual(km.mask_for({"Shift", "Alt"}), 0x5)
+
+    def test_edit_and_conflicts(self):
+        from mithlond import keymap
+        km = keymap.Keymap.parse(KEYMAP_SAMPLE)
+        self.assertEqual(km.conflicts(), set())
+        km.set_binding(1, keymap.KEYBOARD, "DIK_Q", 0x1)  # map -> Shift+Q, same as quickslot 18
+        self.assertEqual(km.conflicts(), {1, 2})
+        km.set_binding(3, keymap.MOUSE, "DIMOFS_BUTTON2", 0)  # mouse stays mouse: keeps its trigger
+        self.assertEqual(km.bindings[3].trigger, "Up/Tap")
+        km.remove_binding(0)
+        j = km.add_binding("MusicUI", "ExitMusicMode", keymap.KEYBOARD, "DIK_F12", 0)
+        self.assertEqual(j, len(km.bindings) - 1)
+        out = km.render()
+        self.assertNotIn("SHOW_NAMES", out)
+        self.assertIn("    ToggleMapPanel [ User [ 0 DIK_Q ] 0x00000001 ]\r\n", out)
+        self.assertIn("    ExitMusicMode [ User [ 0 DIK_F12 ] ]\r\n  ]\r\n]", out)
+        self.assertIn("    ItemLinkToChat [ User [ 1 DIMOFS_BUTTON2 ] 0x00000000 Up/Tap ]", out)
+        self.assertEqual(out.count("\r\n"), out.count("\n"))
+        again = keymap.Keymap.parse(out)
+        self.assertEqual(len(again.bindings), 7)
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "lotro.keymap"
+            p.write_bytes(KEYMAP_SAMPLE.encode())
+            b = keymap.save(p, km)
+            self.assertEqual(b.read_bytes(), KEYMAP_SAMPLE.encode())
+            self.assertEqual(p.read_bytes(), out.encode())
+            self.assertEqual(keymap.latest_backup(p), b)
+        self.assertTrue(keymap.is_keymap(KEYMAP_SAMPLE))
+        self.assertFalse(keymap.is_keymap("hello"))
+
+
+class PluginLoadTests(unittest.TestCase):
+    def test_read_render_save(self):
+        from mithlond import pluginload as pl
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "PluginOptions.xml"
+            p.write_bytes(PLUGINOPTIONS_SAMPLE.encode())
+            a = pl.read(p)
+            self.assertEqual(list(a), ["Wallet", "MinstrelBuff II"])
+            self.assertEqual(a["Wallet"].label(), "All characters")
+            self.assertEqual(a["MinstrelBuff II"].label(), "Realmonster")
+            pl.save(p, a)
+            self.assertEqual(p.read_bytes(), PLUGINOPTIONS_SAMPLE.encode())  # unchanged: byte for byte
+            a["Wallet"] = pl.Autoload(False, ["Realmonster", "Foamdisk"])
+            self.assertEqual(a["Wallet"].label(), "Multiple characters (2)")
+            del a["MinstrelBuff II"]
+            a['Odd "name" & co'] = pl.Autoload(True)
+            b = pl.save(p, a)
+            self.assertIsNotNone(b)
+            raw = p.read_bytes().decode()
+            self.assertEqual(raw.count("\r\n"), raw.count("\n"))
+            self.assertIn('<ScalingOptions>\r\n    <Plugin Name="Wallet" UseScaling="False"/>', raw)
+            again = pl.read(p)
+            self.assertEqual(again["Wallet"].characters, ["Realmonster", "Foamdisk"])
+            self.assertNotIn("MinstrelBuff II", again)
+            self.assertTrue(again['Odd "name" & co'].all)
+            pl.save(p, {})
+            self.assertIn("<AutoloadOptions/>", p.read_text())
+            new = Path(d) / "Grond" / "PluginOptions.xml"
+            pl.save(new, {"Wallet": pl.Autoload(True)})
+            self.assertTrue(pl.read(new)["Wallet"].all)
+
+    def test_servers_characters_plugins_sets_errors(self):
+        from mithlond import pluginload as pl
+        with tempfile.TemporaryDirectory() as d:
+            pd = Path(d) / "PluginData"
+            for sub in ("acc/Sting/Realmonster", "acc/Sting/AllCharacters", "acc/AllServers", "acc/Grond"):
+                (pd / sub).mkdir(parents=True)
+            self.assertEqual(pl.servers(pd), [("acc", "Grond"), ("acc", "Sting")])
+            chars = pl.characters(pd / "acc/Sting", {"X": pl.Autoload(False, ["Foamdisk"])}, ["bonetrain"])
+            self.assertEqual(chars, ["bonetrain", "Foamdisk", "Realmonster"])
+            plugins = Path(d) / "Plugins"
+            (plugins / "Garan").mkdir(parents=True)
+            (plugins / "Garan/Wallet.plugin").write_text(
+                "<Plugin><Information><Name>Wallet</Name><Author>Garan</Author><Version>1.1</Version>"
+                "<Description>Currencies</Description></Information></Plugin>")
+            (plugins / "Garan/MMCust.plugin").write_text(
+                "<Plugin><Information><Name>MMCust</Name><Description>This plugin is used internally by MoorMap. "
+                "Do NOT set this plugin to autoload</Description></Information></Plugin>")
+            (plugins / "Garan/broken.plugin").write_text("<Plugin")
+            found = {x.name: x for x in pl.loadables(plugins, {"garan/wallet.plugin": "Wallet pack"})}
+            self.assertEqual(set(found), {"Wallet", "MMCust"})
+            self.assertEqual(found["Wallet"].package, "Wallet pack")
+            self.assertFalse(found["Wallet"].helper)
+            self.assertTrue(found["MMCust"].helper)
+            with mock.patch.object(pl, "SETS_FILE", Path(d) / "sets.json"):
+                self.assertEqual(pl.load_sets(), {})
+                pl.save_sets({"Raid": {"Wallet": pl.Autoload(True), "Gone": pl.Autoload()}})
+                sets = pl.load_sets()
+                self.assertEqual(list(sets["Raid"]), ["Wallet"])  # "not loaded" entries aren't stored
+                self.assertTrue(sets["Raid"]["Wallet"].all)
+            log = Path(d) / "Script.log"
+            log.write_text("...e\\Plugins\\ChiranBBLE\\SongbookBBLE\\SongbookWindow.lua:82: attempt to index nil\n"
+                           "  stack traceback: line 1\nplain error without a path\n")
+            errs = pl.script_errors(log)
+            self.assertEqual([e.plugin for e in errs], ["ChiranBBLE", ""])
+            self.assertIn("stack traceback", errs[0].text)
+            self.assertEqual(pl.script_errors(Path(d) / "missing.log"), [])
+
+
+class PluginsAndKeysUITests(unittest.TestCase):
+    def test_load_plugins_page(self):
+        from PySide6.QtWidgets import QApplication
+        from mithlond import pluginload as pl
+        from mithlond.ui.context import AppContext
+        from mithlond.ui.plugins_tab import CharacterPopup, PluginsTab
+        app = QApplication.instance() or QApplication([])
+        with tempfile.TemporaryDirectory() as d:
+            docs = Path(d)
+            (docs / "PluginData/acc/Sting/Realmonster").mkdir(parents=True)
+            (docs / "PluginData/acc/Sting/Foamdisk").mkdir(parents=True)
+            (docs / "PluginData/acc/Sting/PluginOptions.xml").write_bytes(PLUGINOPTIONS_SAMPLE.encode())
+            (docs / "Plugins/Garan").mkdir(parents=True)
+            (docs / "Plugins/Garan/Wallet.plugin").write_text(
+                "<Plugin><Information><Name>Wallet</Name><Author>Garan</Author></Information></Plugin>")
+            (docs / "Plugins/Garan/Deeds.plugin").write_text(
+                "<Plugin><Information><Name>Deed Tracker</Name></Information></Plugin>")
+            (docs / "Script.log").write_text("x\\Plugins\\Garan\\Wallet.lua:1: boom\n")
+            ctx = AppContext(Settings(documents_dir=str(docs)))
+            with mock.patch("mithlond.procs.game_clients", return_value=[]):
+                tab = PluginsTab(ctx)
+                titles = [tab.tabs.tabText(i) for i in range(tab.tabs.count())]
+                self.assertEqual(titles, ["Get plugins", "Load plugins", "Plugin errors", "Skins"])
+                lp = tab.load_pane
+                self.assertEqual(lp.server.currentText(), "Sting")
+                rows = {lp.table.item(r, 0).text(): lp.table.item(r, 1).text() for r in range(lp.table.rowCount())}
+                self.assertEqual(rows, {"Wallet": "All characters", "Deed Tracker": "Not loaded",
+                                        "MinstrelBuff II": "Realmonster"})  # not installed but listed
+                self.assertEqual(lp.characters(), ["Foamdisk", "Realmonster"])
+                popup = CharacterPopup(lp, lp.characters(), pl.Autoload(True), lambda a: None)
+                popup.boxes["Foamdisk"].setChecked(True)
+                self.assertFalse(popup.all.isChecked())  # a character unticks "All characters"
+                popup.boxes["Realmonster"].setChecked(True)
+                self.assertEqual(popup.result().label(), "Multiple characters (2)")
+                popup.all.setChecked(True)
+                self.assertEqual(popup.result().characters, [])
+                popup.on_done = None
+                popup.deleteLater()
+                lp.current["Deed Tracker"] = pl.Autoload(False, ["Foamdisk", "Realmonster"])
+                lp.fill()
+                self.assertTrue(lp.save_btn.isEnabled())
+                lp.save()
+                saved = pl.read(docs / "PluginData/acc/Sting/PluginOptions.xml")
+                self.assertEqual(saved["Deed Tracker"].characters, ["Foamdisk", "Realmonster"])
+                self.assertFalse(lp.save_btn.isEnabled())
+                self.assertTrue(lp.restore_btn.isEnabled())
+                with mock.patch("mithlond.procs.game_clients", return_value=[object()]):
+                    lp.current["Wallet"] = pl.Autoload()
+                    lp._check_game()
+                    self.assertFalse(lp.save_btn.isEnabled())  # never while the game runs
+                tab.tabs.setCurrentIndex(2)
+                tab.errors.refresh()
+                self.assertEqual(tab.errors.table.rowCount(), 1)
+                self.assertEqual(tab.errors.table.item(0, 0).text(), "Garan")
+                self.assertIn("not a live feed", tab.errors.info.text())
+                tab.deleteLater()
+                app.processEvents()
+
+    def test_keybindings_tab_and_music_packs(self):
+        from PySide6.QtWidgets import QApplication
+        from mithlond import keymap
+        from mithlond.ui.context import AppContext
+        from mithlond.ui.keybindings_tab import KeybindingsTab, dik_for
+        from mithlond.ui.songs_tab import SongsTab
+        from PySide6.QtCore import Qt
+        app = QApplication.instance() or QApplication([])
+        self.assertEqual(dik_for(Qt.Key_Q, False), "DIK_Q")
+        self.assertEqual(dik_for(Qt.Key_Exclam, False), "DIK_1")
+        self.assertEqual(dik_for(Qt.Key_5, True), "DIK_NUMPAD5")
+        self.assertEqual(dik_for(Qt.Key_Plus, True, plus=True), "DIK_NUMPADPLUS")
+        self.assertIsNone(dik_for(Qt.Key_Shift, False))
+        with tempfile.TemporaryDirectory() as d:
+            docs = Path(d)
+            (docs / "lotro.keymap").write_bytes(KEYMAP_SAMPLE.encode())
+            ctx = AppContext(Settings(documents_dir=str(docs)))
+            with mock.patch("mithlond.procs.game_clients", return_value=[]):
+                tab = KeybindingsTab(ctx)
+                self.assertEqual(tab.table.rowCount(), 6)  # blocked key hidden by default
+                tab.show_blocked.setChecked(True)
+                self.assertEqual(tab.table.rowCount(), 7)
+                tab.search.setText("ctrl+n")
+                self.assertEqual(tab.table.rowCount(), 1)
+                tab.search.clear()
+                tab.km.set_binding(1, keymap.KEYBOARD, "DIK_Q", 0x1)
+                tab.fill()
+                tab.conflicts_only.setChecked(True)
+                self.assertEqual(tab.table.rowCount(), 2)
+                self.assertTrue(tab.save_btn.isEnabled())
+                tab.save()
+                self.assertIn(b"ToggleMapPanel [ User [ 0 DIK_Q ] 0x00000001 ]", (docs / "lotro.keymap").read_bytes())
+                self.assertFalse(tab.save_btn.isEnabled())
+                self.assertTrue(tab.restore_btn.isEnabled())
+                tab.deleteLater()
+            mt = SongsTab(ctx)
+            self.assertFalse(mt.packs_section.toggle.isChecked())  # music packs: collapsed, not loaded
+            self.assertFalse(mt._packs_loaded)
+            with mock.patch.object(mt.packs, "load") as load:
+                mt.packs_section.toggle.click()
+                mt.packs_section.toggle.click()
+                mt.packs_section.toggle.click()
+                load.assert_called_once()
+            mt.deleteLater()
+            app.processEvents()
+
+
 class DiagnosticsTests(unittest.TestCase):
     def test_redaction(self):
         from mithlond import diagnostics
@@ -1365,13 +1603,14 @@ class DiagnosticsTests(unittest.TestCase):
             docs = Path(d) / "docs"
             docs.mkdir()
             (docs / "UserPreferences.ini").write_text("[User_1]\nUserName=FrodoBaggins\n[Display]\nResolution=1920x1080\n")
+            (docs / "Script.log").write_text("Plugins\\Foo\\main.lua:1: boom\n")
             s = Settings(accounts=[Account("FrodoBaggins")], last_account="FrodoBaggins", documents_dir=str(docs))
             s.save()
             logfile.write("Logging in as FrodoBaggins with --glsticketdirect ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkl0123")
             with mock.patch.object(diagnostics, "_run", lambda argv, timeout=10: "tool 1.0"):
                 z = diagnostics.export(s, Path(d) / "out.zip")
             names = zipfile.ZipFile(z).namelist()
-            for n in ("README.txt", "summary.txt", "mithlond.log", "settings.json", "game/UserPreferences.txt",
+            for n in ("README.txt", "summary.txt", "mithlond.log", "settings.json", "game/UserPreferences.txt", "game/Script.log",
                       "plugins.txt"):
                 self.assertIn(n, names)
             everything = "".join(zipfile.ZipFile(z).read(n).decode() for n in names)

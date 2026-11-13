@@ -123,6 +123,9 @@ class Settings:
     check_updates_on_start: bool = True
     skipped_version: str = ""  # "Skip this version" on the update banner
 
+    # Plugins: characters added by hand on Plugins → Load plugins, per "<account>/<server>"
+    known_characters: dict[str, list[str]] = field(default_factory=dict)
+
     # Music
     songbook_auto: bool = True
     maestro_path: str = ""

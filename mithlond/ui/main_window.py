@@ -12,13 +12,14 @@ from PySide6.QtWidgets import (
 
 from .. import __version__
 from ..config import APP_NAME, check_game_dir
-from .addons_tab import AddonsTab
 from .companion_tab import CompanionTab
 from .context import AppContext
 from .effects_tab import VisualEffectsTab
 from .game_settings_tab import GameSettingsTab
+from .keybindings_tab import KeybindingsTab
 from .layout_tab import LayoutTab
 from .play_tab import PlayTab
+from .plugins_tab import PluginsTab
 from .settings_tab import SettingsTab
 from .songs_tab import SongsTab
 from .updater import UpdateBanner, UpdateController
@@ -39,7 +40,8 @@ class MainWindow(QMainWindow):
         self.game_settings = GameSettingsTab(ctx)
         self.effects = VisualEffectsTab(ctx)
         self.layouts = LayoutTab(ctx)
-        self.addons = AddonsTab(ctx)
+        self.keys = KeybindingsTab(ctx)
+        self.plugins = PluginsTab(ctx)
         self.songs = SongsTab(ctx)
         self.companion = CompanionTab(ctx)
         self.settings = SettingsTab(ctx)
@@ -47,7 +49,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.game_settings, "In game settings")
         self.tabs.addTab(self.effects, "Visual effects")
         self.tabs.addTab(self.layouts, "Layouts")
-        self.tabs.addTab(self.addons, "Downloads")
+        self.tabs.addTab(self.keys, "Key bindings")
+        self.tabs.addTab(self.plugins, "Plugins")
         self.tabs.addTab(self.songs, "Music")
         self.tabs.addTab(self.companion, "LotRO Companion")
         self.tabs.addTab(self.settings, "Settings")

@@ -146,6 +146,23 @@ Saving writes only the changed lines (the rest of the file stays exactly as the 
 previous version in the backup folder; **Restore previous** puts it back. Chat tabs and their filters are not
 part of layout files: the game keeps them on its servers.
 
+## Key bindings
+
+Every key binding in `lotro.keymap` (documents folder): the action, its key with modifiers (e.g.
+*Ctrl+Shift+Q*, *Mouse 4*, *Mouse wheel up*), and where it works (*General*, *Map*, *Music mode*, *Text
+fields*…). Search by action or key (`map`, `quickslot 5`, `ctrl+q`), pick a place, or tick **Keys that do two
+things** to see keys that run more than one action in the same place (shown in red).
+
+- **Change key…** (or double-click) waits for the new key or combination; Shift, Ctrl and Alt work as
+  modifiers, and the middle and side mouse buttons can be used. **Add another key…** gives an action a second
+  key, and **Remove key** removes one.
+- **Show blocked keys** shows keys set to do nothing (the game writes these when you clear a default key).
+- **Save** writes the file, keeping every unchanged line exactly as the game wrote it, with a backup
+  (**Restore backup**). Not while the game runs: it rewrites its key bindings when it closes.
+- **Save to file…** saves the whole set of key bindings as a `.keymap` file (default folder
+  `~/.config/mithlond/keymaps`) to keep or to use on another computer; **Load from file…** loads one, and
+  **Save** then makes it the game's key bindings.
+
 ## In game settings
 
 The tab is called **In game settings**. It holds the game's own options, read from `UserPreferences.ini` in the documents folder the game is started with. They're
@@ -177,9 +194,11 @@ values the game measures itself.
 Tested: settings saved here (texture detail, the game's frame rate cap, interface scale, master volume, ambient
 occlusion) were read by the game and kept when it rewrote the file.
 
-## Downloads
+## Plugins
 
-Three sub-tabs list **Plugins**, **Skins** and **Music packs** from lotrointerface.com.
+Four pages: **Get plugins**, **Load plugins**, **Plugin errors** and **Skins**.
+
+### Get plugins (and Skins)
 
 The lists combine lotrointerface's curated lists (OneLauncher's and Plugin Compendium's, which include
 versions and descriptions) with **the site's full catalogue**, read from its category pages and cached for a
@@ -200,6 +219,36 @@ description. **Hide outdated** (on by default) hides the "Outdated LotRO Interfa
 
 Plugins installed by hand or with LOTRO Plugin Compendium are picked up automatically (through their
 `.plugincompendium` files) and can then be updated and uninstalled here as well.
+
+**Skins** works the same way for interface skins. Music packs are in the Music tab.
+
+### Load plugins
+
+Which plugins the game loads by itself, and for which characters. The game keeps one list per account and
+server (`PluginData/<account>/<server>/PluginOptions.xml`), so pick the **Server** first.
+
+- Every installed plugin is listed, plus plugins the list still loads but that aren't installed any more (grey).
+  **Loads on** says *All characters*, a character's name, *Multiple characters (n)* (hover for the names) or
+  *Not loaded*.
+- Click a plugin to open its menu: tick **All characters**, or tick the characters that should load it.
+  Ticking a character unticks *All characters* and the other way round. Untick everything for *Not loaded*.
+- Characters are known once they've loaded a plugin on this computer (their `PluginData` folder) or appear in
+  the list. Others, for example on a server you haven't played on this computer, can be added with
+  **Add character…**. The full character list exists only on the game's servers.
+- **Show helper plugins** shows plugins whose authors say not to auto-load them (for example MoorMap's
+  MMCust); they're hidden otherwise.
+- **Sets:** **Save as set…** stores the current choices under a name; pick one from the list and **Load set**
+  to use it (then **Save**), or **Delete set**. Sets are kept in `~/.config/mithlond/plugin-sets.json` and work
+  on any server.
+- **Save** writes only the auto-load part of the file and keeps the rest, with a backup next to it
+  (**Restore backup** puts it back). Like the game settings, this can't be saved while the game runs, because
+  the game writes the file itself. Changes apply when a character next enters the world.
+
+### Plugin errors
+
+The plugin (Lua) errors the game wrote to `Script.log` in the documents folder, with the plugin each one
+belongs to. It isn't a live feed: it shows the file as it was when you opened the page or pressed
+**Refresh**. **Export logs** includes this file.
 
 ## Music
 
@@ -224,6 +273,11 @@ At the bottom of the Music tab, closed by default: click its title to open it.
 | WAN Songbook Filler | A Windows program that builds the Songbook list quickly for large or network-shared Music folders. Last release 2017. It runs through your runner. |
 
 The note under each tool shows the latest release and how old it is.
+
+### Music packs
+
+Below the music tools, also closed by default: song collections from lotrointerface.com, with the same search,
+install, update and uninstall as **Plugins → Get plugins**. The list is loaded the first time you open it.
 
 ## LotRO Companion
 
