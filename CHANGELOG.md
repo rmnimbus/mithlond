@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.14
 
 - **New Key bindings tab:** every key binding in the game, searchable by action or key, with keys that do two
   things in the same place marked in red. Change keys (keyboard with Shift/Ctrl/Alt, middle and side mouse
