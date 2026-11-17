@@ -109,6 +109,30 @@ class SongTests(unittest.TestCase):
             self.assertEqual(files, [pd / "acct" / "AllServers" / "SongbookData.plugindata"])
             self.assertTrue(lua_balanced(files[0].read_text()))
 
+    def test_songbook3(self):
+        with tempfile.TemporaryDirectory() as d:
+            music = Path(d) / "Music"
+            (music / "Band").mkdir(parents=True)
+            (music / "lyrics" / "Band").mkdir(parents=True)
+            (music / "solo.abc").write_text("T:Solo\nX:1\nK:C\n")
+            (music / "Band" / "trio.abc").write_text("X:1\nT:Trio \"A\"\nT:extra\nX:2\nT:Trio B\n")
+            (music / "Band" / "notes.txt").write_text("not a song")
+            (music / "oneline.abc").write_text("X:3T:Broken M:4/4 K:C abc|")
+            (music / "lyrics" / "Band" / "trio.txt").write_text("line\tone\r\nline two\r\n")
+            data, lyr, n, nl = songs.songbook3_data(music)
+            self.assertEqual((n, nl), (3, 1))
+            self.assertIn('Id = "3";', data)
+            self.assertTrue(data.startswith("return {\n\tSongs = {\n"))
+            self.assertIn('Filepath = "/Band/";', data)
+            self.assertIn('Name = "Trio \\"A\\"";', data)
+            self.assertNotIn("extra", data)
+            self.assertIn('\t\t"/Band/";\n', data)
+            self.assertIn('"line\\tone";', lyr)
+            self.assertTrue(lua_balanced(data) and lua_balanced(lyr))
+            pd = Path(d) / "PluginData"
+            _, files = songs.write_songbook3(music, pd, ["acct"])
+            self.assertEqual([f.name for f in files], ["SongBook3Data.plugindata", "SongBook3Lyrics.plugindata"])
+
     def test_import(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)

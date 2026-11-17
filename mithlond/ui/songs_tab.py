@@ -28,9 +28,36 @@ def songbook_accounts(s: Settings) -> list[str]:
     return accs
 
 
-def songbook_installed(s: Settings) -> bool:
+def songbook_kinds(s: Settings) -> set[str]:
+    """Installed Songbook plugins: "songbook" (Chiran's Songbook/SongbookBBLE, SongbookData) and/or
+    "songbook3" (Sinduriel's SongBook3, SongBook3Data/SongBook3Lyrics)."""
     plugins = s.subdir("Plugins")
-    return bool(plugins and plugins.is_dir() and any(plugins.glob("*/Songbook*.plugin")))
+    kinds: set[str] = set()
+    if plugins and plugins.is_dir():
+        for f in plugins.glob("*/*.plugin"):
+            name = f.stem.lower()
+            if name == "songbook3":
+                kinds.add("songbook3")
+            elif name.startswith("songbook"):
+                kinds.add("songbook")
+    return kinds
+
+
+def songbook_installed(s: Settings) -> bool:
+    return bool(songbook_kinds(s))
+
+
+def write_lists(md: Path, pd: Path, accs: list[str], kinds: set[str]) -> tuple[int, list[Path]]:
+    """Write the song list for each installed Songbook plugin (the classic one when none is found)."""
+    count, files = 0, []
+    if "songbook3" in kinds:
+        count, f3 = songs.write_songbook3(md, pd, accs)
+        files += f3
+    if "songbook" in kinds or not kinds:
+        c, f1 = songs.write_songbook(md, pd, accs)
+        count = max(count, c)
+        files += f1
+    return count, files
 
 
 class SongsTab(QWidget):
@@ -63,8 +90,8 @@ class SongsTab(QWidget):
         self.delete_btn = QPushButton("Delete")
         self.folder_btn = QPushButton("Open Music folder")
         self.songbook_btn = QPushButton("Update Songbook list")
-        self.songbook_btn.setToolTip("Write SongbookData.plugindata so the Songbook plugin sees your songs\n"
-                                     "(replaces SongbookFiller.exe / songbook.hta)")
+        self.songbook_btn.setToolTip("Write the song list so the Songbook or SongBook3 plugin sees your songs\n"
+                                     "(replaces SongbookFiller.exe / songbook.hta / SongBook3_Scanner.pl)")
         bottom = QHBoxLayout()
         for b in (self.delete_btn, self.folder_btn, self.songbook_btn):
             bottom.addWidget(b)
@@ -284,7 +311,8 @@ class SongsTab(QWidget):
                 self.status.setText(f"Songbook list updated: {count} songs, for {', '.join(accs)}. "
                                     "In game, reload the plugin or relog to see changes.")
 
-        run_task(lambda: songs.write_songbook(md, pd, accs), on_done=done,
+        kinds = songbook_kinds(s)
+        run_task(lambda: write_lists(md, pd, accs, kinds), on_done=done,
                  on_error=lambda e: self.status.setText(f"Songbook update failed: {e}"))
 
     def _save_auto(self, on: bool) -> None:

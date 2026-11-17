@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.16
+
+- Music: "Update Songbook list" now also writes the song and lyrics lists for Sinduriel's SongBook3
+  (`SongBook3Data` / `SongBook3Lyrics.plugindata`, lyrics from `Music/lyrics`). Before, SongBook3 showed
+  "The song library is empty". Unlike `SongBook3_Scanner.pl`, one malformed ABC file doesn't stop the scan.
+- Fix: a track's X: number is now just its digits, so ABC files without line breaks get a usable track id.
+
 ## 1.4.15
 
 - README: screenshots of the main pages (made with a sample setup).

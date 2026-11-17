@@ -18,6 +18,7 @@ SONG_EXTS = (".abc", ".txt")
 class Part:
     id: str
     name: str
+    first_title: str = ""
 
 
 @dataclass
@@ -59,7 +60,8 @@ def parse_abc(path: Path) -> Song:
         if len(line) < 2 or line[1] != ":":
             continue
         if line[0] == "X":
-            song.parts.append(Part(_field(line) or str(len(song.parts) + 1), ""))
+            m = re.match(r"\s*(\d+)", line[2:])
+            song.parts.append(Part(m.group(1) if m else str(len(song.parts) + 1), ""))
             names.append(pending)
             pending = []
         elif line[0] == "T":
@@ -69,6 +71,7 @@ def parse_abc(path: Path) -> Song:
         names.append(pending)
     for p, n in zip(song.parts, names):
         p.name = " - ".join(x for x in n if x)
+        p.first_title = next((x for x in n if x), "")
     return song
 
 
@@ -134,6 +137,99 @@ def songbook_data(music_dir: Path) -> tuple[str, int, int]:
         out += [f"{T*3}}}", f"{T*2}}}" + ("," if i < len(songs) else "")]
     out += [f"{T}}}", "}"]
     return "\r\n".join(out) + "\r\n", len(songs), len(dirs)
+
+
+# --- SongBook3 (Sinduriel) -------------------------------------------------------------------
+# Its own format and file names (SongBook3Data / SongBook3Lyrics.plugindata), as written by
+# Plugins/Sinduriel/SongBook3_Scanner.pl: .abc files only, each track named by its first T: line;
+# lyrics are .txt files under Music/lyrics mirroring the song folders.
+
+def _lua3(value: str) -> str:
+    v = value.replace("\\", "\\\\").replace('"', '\\"').replace("\r", "\\r").replace("\n", "\\n") \
+        .replace("\t", "\\t")
+    v = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", lambda m: f"\\{ord(m.group()):03d}", v)
+    return f'"{v}"'
+
+
+def _dir_and_parents(dirs: set[str], rel: str) -> str:
+    path = "/" if rel in ("", ".") else f"/{rel}/"
+    cur = "/"
+    dirs.add(cur)
+    for part in rel.split("/"):
+        if part and part != ".":
+            cur += part + "/"
+            dirs.add(cur)
+    return path
+
+
+def _files(root: Path, ext: str, skip: Path | None = None) -> list[Path]:
+    found = []
+    for f in root.rglob("*"):
+        if skip is not None and f.is_relative_to(skip):
+            continue
+        if f.suffix.lower() == ext and f.is_file():
+            found.append(f)
+    return sorted(found, key=lambda p: (p.as_posix().lower(), p.as_posix()))
+
+
+def songbook3_data(music_dir: Path) -> tuple[str, str, int, int]:
+    """(SongBook3Data text, SongBook3Lyrics text, song count, lyric count)."""
+    T = "\t"
+    lyrics_root = music_dir / "lyrics"
+    dirs: set[str] = set()
+    out = ["return {", f"{T}Songs = {{"]
+    songs = _files(music_dir, ".abc", lyrics_root) if music_dir.is_dir() else []
+    for f in songs:
+        try:
+            song = parse_abc(f)
+        except OSError:
+            continue
+        fp = _dir_and_parents(dirs, f.parent.relative_to(music_dir).as_posix())
+        out += [f"{T*2}{{", f"{T*3}Filepath = {_lua3(fp)};", f"{T*3}Filename = {_lua3(f.stem)};",
+                f"{T*3}Tracks = {{"]
+        for p in song.parts:
+            out += [f"{T*4}{{", f"{T*5}Id = {_lua3(p.id)};"]
+            if p.first_title:
+                out.append(f"{T*5}Name = {_lua3(p.first_title)};")
+            out.append(f"{T*4}}};")
+        out += [f"{T*3}}}", f"{T*2}}};"]
+    dirs.add("/")
+    out += [f"{T}}};", f"{T}Directories = {{"] + [f"{T*2}{_lua3(d)};" for d in sorted(dirs)] + [f"{T}}}", "}"]
+
+    ldirs: set[str] = {"/"}
+    lout = ["return {", f"{T}Lyrics = {{"]
+    lyrics = _files(lyrics_root, ".txt") if lyrics_root.is_dir() else []
+    for f in lyrics:
+        try:
+            text = _read_text(f)
+        except OSError:
+            continue
+        fp = _dir_and_parents(ldirs, f.parent.relative_to(lyrics_root).as_posix())
+        lines = re.split(r"\r\n|\n|\r", text)
+        if lines and lines[-1] == "":
+            lines.pop()
+        lout += [f"{T*2}{{", f"{T*3}Filepath = {_lua3(fp)};", f"{T*3}Filename = {_lua3(f.stem)};",
+                 f"{T*3}Lines = {{"] + [f"{T*4}{_lua3(x)};" for x in lines] + [f"{T*3}}}", f"{T*2}}};"]
+    lout += [f"{T}}};", f"{T}Directories = {{"] + [f"{T*2}{_lua3(d)};" for d in sorted(ldirs)] + [f"{T}}}", "}"]
+    return "\n".join(out) + "\n", "\n".join(lout) + "\n", len(songs), len(lyrics)
+
+
+def _write_atomic(f: Path, text: str) -> None:
+    f.parent.mkdir(parents=True, exist_ok=True)
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(text, encoding="utf-8", newline="")
+    tmp.replace(f)
+
+
+def write_songbook3(music_dir: Path, plugindata_dir: Path, accounts: list[str]) -> tuple[int, list[Path]]:
+    data, lyrics, count, _ = songbook3_data(music_dir)
+    written = []
+    for acc in accounts:
+        d = plugindata_dir / acc / "AllServers"
+        for name, text in (("SongBook3Data.plugindata", data), ("SongBook3Lyrics.plugindata", lyrics)):
+            _write_atomic(d / name, text)
+            written.append(d / name)
+    return count, written
 
 
 def plugindata_accounts(plugindata_dir: Path) -> list[str]:
