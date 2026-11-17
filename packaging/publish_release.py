@@ -2,11 +2,15 @@
 """Release helper for packaging/release.sh (standard library only).
 
   publish_release.py notes X.Y.Z               print the CHANGELOG section for X.Y.Z
-  publish_release.py publish X.Y.Z APPIMAGE    Gitea release + asset, wait for the mirrored tag on GitHub,
-                                               GitHub release (latest) + asset, then check what the updater sees
+  publish_release.py publish X.Y.Z APPIMAGE [--github]
+                                               Gitea release + asset; wait for the mirrored tag on gitgud.io,
+                                               upload the AppImage and SHA256SUMS to its generic package registry,
+                                               gitgud release linking both; then check what the updater sees.
+                                               --github also makes a GitHub release (only for the 1.4.17 bridge:
+                                               installs up to 1.4.16 look for updates on GitHub).
 
 Every step looks first and skips what already exists, so a failed run can simply be repeated.
-Tokens are read from ~/.config/gitea/token and ~/.config/github/token and never printed."""
+Tokens are read from ~/.config/{gitea,gitgud,github}/token and never printed."""
 
 from __future__ import annotations
 
@@ -24,6 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GITEA = "https://gitea.foamdisk.com/api/v1/repos/realmonster/mithlond"
 GITHUB = "https://api.github.com/repos/rmnimbus/mithlond"
 GITHUB_UPLOADS = "https://uploads.github.com/repos/rmnimbus/mithlond"
+GITGUD = "https://gitgud.io/api/v4/projects/Realmonster%2Fmithlond"
 
 
 def notes(ver: str) -> str:
@@ -115,31 +120,73 @@ def github_release(ver: str, asset: Path, body: str, digest: str) -> None:
         sys.exit(f"GitHub: the uploaded file's checksum {existing['digest']} doesn't match the local file")
 
 
-def check_updater(ver: str, digest: str) -> None:
+def gitgud_release(ver: str, asset: Path, body: str, digest: str) -> None:
+    hdr = {"PRIVATE-TOKEN": token("gitgud"), "Accept": "application/json"}
+    tag = f"v{ver}"
+    for i in range(60):
+        if call(f"{GITGUD}/repository/tags/{tag}", hdr) is not None:
+            break
+        if i == 0:
+            print("gitgud: waiting for the push mirror to bring the tag…")
+        time.sleep(10)
+    else:
+        sys.exit("gitgud: the tag didn't arrive within 10 minutes; check the Gitea push mirror, then run again")
+    pkg = f"{GITGUD}/packages/generic/mithlond/{ver}"
+    sums = f"{digest}  {asset.name}\n".encode()
+    files = {}
+    for name, data in ((asset.name, None), ("SHA256SUMS", sums)):
+        url = f"{pkg}/{urllib.parse.quote(name)}"
+        f = call(f"{url}?select=package_file", hdr, "PUT", raw=data if data is not None else asset.read_bytes(),
+                 ctype="application/octet-stream")
+        want = digest if data is None else sha256_bytes(data)
+        if f and f.get("file_sha256") and f["file_sha256"] != want:
+            sys.exit(f"gitgud: the uploaded {name} doesn't match the local file")
+        print(f"gitgud: uploaded {name}")
+        files[name] = url
+    rel = call(f"{GITGUD}/releases/{tag}", hdr)
+    if rel is None:
+        links = [{"name": asset.name, "url": files[asset.name], "link_type": "package"},
+                 {"name": "SHA256SUMS", "url": files["SHA256SUMS"], "link_type": "other"}]
+        rel = call(f"{GITGUD}/releases", hdr, "POST", {"tag_name": tag, "name": f"Mithlond {ver}",
+                                                       "description": body, "assets": {"links": links}})
+        print(f"gitgud: created release {rel['_links']['self']}")
+    else:
+        print(f"gitgud: release {tag} already exists")
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def check_updater(ver: str, digest: str, asset_size: int) -> None:
     sys.path.insert(0, str(ROOT))
     from mithlond import selfupdate
-    for _ in range(12):  # GitHub's "latest" can lag a few seconds behind
+    for _ in range(12):  # "latest" can lag a few seconds behind
         rel = selfupdate.latest_release()
         if rel.version == ver and rel.sha256:
             break
         time.sleep(5)
     if rel.version != ver:
-        sys.exit(f"Updater check: GitHub's latest release is {rel.version}, not {ver}")
+        sys.exit(f"Updater check: the latest release on {selfupdate.HOST} is {rel.version}, not {ver}")
     if rel.sha256 != digest:
-        sys.exit("Updater check: the checksum GitHub reports doesn't match the local AppImage")
+        sys.exit("Updater check: the release's SHA256SUMS doesn't match the local AppImage")
+    if rel.asset_size != asset_size:
+        sys.exit(f"Updater check: the download is {rel.asset_size} bytes, the local AppImage {asset_size}")
     print(f"Updater check: latest release is {rel.version}, asset {rel.asset_name}, checksum matches")
 
 
 def main() -> None:
     if len(sys.argv) >= 3 and sys.argv[1] == "notes":
         print(notes(sys.argv[2]))
-    elif len(sys.argv) == 4 and sys.argv[1] == "publish":
+    elif len(sys.argv) in (4, 5) and sys.argv[1] == "publish" and sys.argv[4:] in ([], ["--github"]):
         ver, asset = sys.argv[2], Path(sys.argv[3])
         body = notes(ver)
         digest = sha256(asset)
         gitea_release(ver, asset, body)
-        github_release(ver, asset, body, digest)
-        check_updater(ver, digest)
+        gitgud_release(ver, asset, body, digest)
+        if sys.argv[4:] == ["--github"]:
+            github_release(ver, asset, body, digest)
+        check_updater(ver, digest, asset.stat().st_size)
     else:
         sys.exit(__doc__)
 

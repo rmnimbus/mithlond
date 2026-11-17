@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.17
+
+- Mithlond has moved to **gitgud.io**: https://gitgud.io/Realmonster/mithlond. Updates now come from there.
+  This release is the last one published on GitHub too, so earlier versions can still find it.
+- The updater checks each download against the `SHA256SUMS` file published with the release.
+
 ## 1.4.16
 
 - Music: "Update Songbook list" now also writes the song and lyrics lists for Sinduriel's SongBook3

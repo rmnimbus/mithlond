@@ -844,17 +844,24 @@ class SelfUpdateTests(unittest.TestCase):
 
     def test_parse_and_compare(self):
         from mithlond import selfupdate
-        data = {"tag_name": "v1.4.0", "body": "**new**", "html_url": "https://github.com/x/releases/tag/v1.4.0",
-                "assets": [{"name": "Mithlond-1.4.0-aarch64.AppImage", "browser_download_url": "a", "size": 1},
-                           {"name": f"Mithlond-1.4.0-{selfupdate.arch()}.AppImage", "browser_download_url": "u",
-                            "size": 42, "digest": "sha256:abc"}]}
-        r = selfupdate.parse_release(data)
-        self.assertEqual((r.version, r.asset_url, r.asset_size, r.sha256), ("1.4.0", "u", 42, "abc"))
+        a = f"Mithlond-1.4.0-{selfupdate.arch()}.AppImage"
+        data = {"tag_name": "v1.4.0", "description": "**new**",
+                "_links": {"self": "https://gitgud.io/x/-/releases/v1.4.0"},
+                "assets": {"sources": [], "links": [
+                    {"name": "Mithlond-1.4.0-aarch64.AppImage", "url": "a"},
+                    {"name": a, "url": "u0", "direct_asset_url": "u"},
+                    {"name": "SHA256SUMS", "url": "s"}]}}
+        sums = selfupdate.parse_sums(f"{'ab' * 32}  {a}\n{'cd' * 32} *other\n")
+        self.assertEqual(sums["other"], "cd" * 32)
+        r = selfupdate.parse_release(data, sums)
+        self.assertEqual((r.version, r.asset_url, r.sha256, r.notes), ("1.4.0", "u", "ab" * 32, "**new**"))
+        self.assertEqual(r.page, "https://gitgud.io/x/-/releases/v1.4.0")
+        self.assertIsNone(selfupdate.parse_release(data).sha256)
         self.assertTrue(selfupdate.is_newer("1.4.0", "1.3.0"))
         self.assertTrue(selfupdate.is_newer("1.10.0", "1.9.9"))
         self.assertFalse(selfupdate.is_newer("1.3.0", "1.3.0"))
         self.assertFalse(selfupdate.is_newer("1.2.9", "1.3.0"))
-        self.assertIsNone(selfupdate.parse_release({"tag_name": "v2", "assets": []}).asset_url)
+        self.assertIsNone(selfupdate.parse_release({"tag_name": "v2", "assets": {"links": []}}).asset_url)
 
     def test_update_replaces_appimage(self):
         from mithlond import selfupdate

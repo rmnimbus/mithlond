@@ -64,7 +64,7 @@ class UpdateController(QObject):
         if self._busy:
             return
         self._busy = True
-        self.status.emit("Checking GitHub for a newer Mithlond…")
+        self.status.emit(f"Checking {selfupdate.HOST} for a newer Mithlond…")
 
         def done(rel: selfupdate.Release):
             self._busy = False
@@ -110,7 +110,7 @@ class UpdateController(QObject):
         view.setOpenExternalLinks(True)
         view.setMarkdown(self.release.notes or "_No release notes._")
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
-        page = buttons.addButton("Open on GitHub", QDialogButtonBox.ActionRole)
+        page = buttons.addButton(f"Open on {selfupdate.HOST}", QDialogButtonBox.ActionRole)
         page.clicked.connect(lambda: open_url(self.release.page))
         buttons.rejected.connect(dlg.reject)
         lay = QVBoxLayout(dlg)
@@ -133,7 +133,7 @@ class UpdateController(QObject):
         current = selfupdate.running_appimage()
         if QMessageBox.question(self.window, "Update Mithlond",
                                 f"Update Mithlond {__version__} → {rel.version}?\n\n"
-                                f"The new AppImage ({rel.asset_size / 1048576:.0f} MB) is downloaded from GitHub, "
+                                f"The new AppImage ({rel.asset_size / 1048576:.0f} MB) is downloaded from {selfupdate.HOST}, "
                                 f"checked, and replaces\n{current}.") != QMessageBox.Yes:
             return
         dlg = QProgressDialog(f"Downloading Mithlond {rel.version}…", "", 0, 0, self.window)

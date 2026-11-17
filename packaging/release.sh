@@ -3,13 +3,14 @@
 #
 #   packaging/release.sh build X.Y.Z        set the version in mithlond/__init__.py, turn CHANGELOG's
 #                                           "## Unreleased" into "## X.Y.Z", build dist/Mithlond-X.Y.Z-x86_64.AppImage
-#   packaging/release.sh publish X.Y.Z [-F message-file]
+#   packaging/release.sh publish X.Y.Z [-F message-file] [--github]
 #                                           commit, tag vX.Y.Z, push to Gitea, create the Gitea release with the
-#                                           AppImage, wait for the push mirror, create the GitHub release (latest)
-#                                           with the AppImage, and check that the updater sees X.Y.Z with the right
-#                                           checksum. Safe to run again after a failure: finished steps are skipped.
+#                                           AppImage, wait for the push mirror to gitgud.io, create the gitgud
+#                                           release (AppImage + SHA256SUMS in its package registry), and check that
+#                                           the updater sees X.Y.Z with the right checksum. --github also releases on
+#                                           GitHub (1.4.17 bridge only). Safe to run again: finished steps are skipped.
 #
-# Tokens: ~/.config/gitea/token and ~/.config/github/token (never printed).
+# Tokens: ~/.config/gitea/token, ~/.config/gitgud/token, ~/.config/github/token (never printed).
 # The commit message is "X.Y.Z" plus the changelog section, or the file given with -F.
 set -eu
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
@@ -38,8 +39,9 @@ build)
     echo "Next: test $ASSET (tests + one real launch), then: packaging/release.sh publish $VER"
     ;;
 publish)
-    MSGFILE=""
-    if [ "${1:-}" = "-F" ]; then [ -f "${2:-}" ] || die "message file not found"; MSGFILE="$2"; fi
+    MSGFILE=""; GH=""
+    if [ "${1:-}" = "-F" ]; then [ -f "${2:-}" ] || die "message file not found"; MSGFILE="$2"; shift 2; fi
+    if [ "${1:-}" = "--github" ]; then GH="--github"; fi
     [ "$CUR" = "$VER" ] || die "mithlond/__init__.py says $CUR; run 'release.sh build $VER' first"
     [ -f "$ASSET" ] || die "$ASSET is missing; run 'release.sh build $VER' first"
     NOTES="$(python3 packaging/publish_release.py notes "$VER")"
@@ -52,7 +54,7 @@ publish)
     fi
     [ -z "$(git status --porcelain)" ] || die "uncommitted changes after tagging; commit or stash them first"
     git push -q origin master "$TAG"
-    python3 packaging/publish_release.py publish "$VER" "$ASSET"
+    python3 packaging/publish_release.py publish "$VER" "$ASSET" $GH
     ;;
 *) die "unknown step '$STEP' (build or publish)" ;;
 esac

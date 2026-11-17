@@ -24,7 +24,7 @@ mithlond/
   desktopentry.py application menu entry that follows the AppImage
   uilayout.py     the game's ui/layouts/*.layout: windows, options, chat colors; in-place saving
   gameprefs.py    the game's UserPreferences.ini: schema of every known setting (names and values from the client), read, save
-  selfupdate.py   Mithlond's own updates from GitHub releases (rmnimbus/mithlond): check, download, verify, replace
+  selfupdate.py   Mithlond's own updates from gitgud.io releases (Realmonster/mithlond): check, download, verify, replace
   keystore.py     password storage through secret-tool
   hostenv.py      environment isolation when running from the AppImage
   ui/             one module per tab, plus theme, workers (thread pool) and shared context
@@ -87,9 +87,12 @@ secret-tool…) get the user's original environment (`hostenv.py`).
 3. Test that AppImage: the test suite and one real launch with saved settings.
 4. `packaging/release.sh publish X.Y.Z [-F message-file]` commits (message: the version plus the changelog section,
    or the given file), tags `vX.Y.Z`, pushes to Gitea, creates the Gitea release with the AppImage, waits until
-   Gitea's push mirror has brought the tag to GitHub, creates the GitHub release (marked latest) with the
-   AppImage, and checks that the updater sees `X.Y.Z` with the same SHA-256 as the local file.
+   Gitea's push mirror has brought the tag to gitgud.io, uploads the AppImage and a `SHA256SUMS` file to the
+   project's generic package registry (`mithlond/X.Y.Z`), creates the gitgud release linking both, and checks
+   that the updater sees `X.Y.Z` with the same SHA-256 and size as the local file.
 
 `publish` skips whatever already exists, so after a failure (network, mirror delay) just run it again. It needs
-`~/.config/gitea/token` and `~/.config/github/token` (never printed; `packaging/publish_release.py` holds the API
-calls). The updater reads GitHub's "latest release" and its asset's `digest`.
+`~/.config/gitea/token` and `~/.config/gitgud/token` (never printed; `packaging/publish_release.py` holds the API
+calls). The updater reads gitgud's `releases/permalink/latest`, the AppImage link for its architecture and the
+release's `SHA256SUMS`. Releases up to 1.4.16 were on GitHub (rmnimbus/mithlond); 1.4.17 was published on both
+(`--github`) so older installs find their way to gitgud.

@@ -19,7 +19,7 @@ alongside the game.
 | **Layouts** | Edit saved interface layouts (`/ui layout save`/`load`): drag and resize windows on a screen-sized canvas, interface options, chat colors and sizes. |
 | **Key bindings** | Every key binding in the game, searchable, with keys that do two things marked. Change, add or remove keys while the game is closed, and save or load whole key binding files. |
 | **Plugins** | **Get plugins**: plugins and skins from [lotrointerface.com](https://www.lotrointerface.com/); browse, search, install (dependencies included), update and uninstall, alongside LOTRO Plugin Compendium and plugins installed by hand. **Load plugins**: which characters auto-load which plugin, per server, with named sets. **Plugin errors**: the Lua errors the game logged. |
-| **Music** | Import `.abc` songs (files, folders, zips, drag and drop) and browse them by title and part count. Music packs from lotrointerface.com. Keeps the **Songbook** plugin's song list up to date. Downloads and starts **Maestro** and **WAN Songbook Filler**, and links to **BruTE**. |
+| **Music** | Import `.abc` songs (files, folders, zips, drag and drop) and browse them by title and part count. Music packs from lotrointerface.com. Keeps the song lists of the **Songbook** and **SongBook3** plugins up to date. Downloads and starts **Maestro** and **WAN Songbook Filler**, and links to **BruTE**. |
 | **LotRO Companion** | Downloads, updates and starts **LotRO Companion**, and can open and close it along with the game. |
 | **Settings** | Game, documents, plugins and downloads folders. Runner (system Wine or any Proton) and prefix, environment variables, and game options (gamescope, MangoHud, GameMode, DXVK HUD…). |
 
@@ -43,7 +43,8 @@ It never goes into a file.
 
 ## Getting started
 
-1. Download `Mithlond-<version>-x86_64.AppImage` and **make it executable**. Browsers always save downloads
+1. Download `Mithlond-<version>-x86_64.AppImage` from the
+   [releases page](https://gitgud.io/Realmonster/mithlond/-/releases) and **make it executable**. Browsers always save downloads
    without that permission. If you skip this, double-clicking opens it in an archive program ("archive type not
    supported") instead of running it. Either:
    - in a terminal: `chmod +x ~/Downloads/Mithlond-*.AppImage`, or

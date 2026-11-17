@@ -159,7 +159,7 @@ class SettingsTab(QWidget):
         self.menu_status.setWordWrap(True)
         self.menu_btn.clicked.connect(self._add_to_menu)
         ok, why = selfupdate.can_self_update()
-        how = ("Updates are downloaded from GitHub and replace this AppImage." if ok else
+        how = (f"Updates are downloaded from {selfupdate.HOST} and replace this AppImage." if ok else
                f"{why} Updates open the download page instead.")
         ab = QFormLayout()
         vrow = QHBoxLayout()
@@ -183,7 +183,7 @@ class SettingsTab(QWidget):
         erow.addWidget(self.export_btn)
         erow.addWidget(subtle("For bug reports: logs and setup summary in one zip, personal data removed."), 1)
         ab.addRow("Problems?", erow)
-        ab.addRow("", subtle(f"{how} Releases: {selfupdate.RELEASES_PAGE.rsplit('/latest', 1)[0]}"))
+        ab.addRow("", subtle(f"{how} Releases: {selfupdate.RELEASES_PAGE}"))
         about_box = QGroupBox("About && updates")  # && = a literal & in Qt titles
         about_box.setLayout(ab)
 

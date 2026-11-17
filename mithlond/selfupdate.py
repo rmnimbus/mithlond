@@ -1,8 +1,8 @@
-"""Updating Mithlond itself from its GitHub releases.
+"""Updating Mithlond itself from its releases on gitgud.io (a GitLab instance).
 
 Only the AppImage can update itself: the new AppImage is downloaded next to the running one, verified
-(size, AppImage header, GitHub's SHA-256 digest), made executable, and replaces the old file. Running from
-source, the user is pointed at the release page instead.
+(size, AppImage header, the SHA-256 from the release's SHA256SUMS file), made executable, and replaces the
+old file. Running from source, the user is pointed at the release page instead.
 """
 
 from __future__ import annotations
@@ -19,10 +19,12 @@ import requests
 
 from . import __version__
 
-REPO = "rmnimbus/mithlond"
-API = f"https://api.github.com/repos/{REPO}/releases/latest"
-RELEASES_PAGE = f"https://github.com/{REPO}/releases/latest"
-UA = {"User-Agent": f"Mithlond/{__version__}", "Accept": "application/vnd.github+json"}
+HOST = "gitgud.io"
+REPO = "Realmonster/mithlond"
+API = f"https://{HOST}/api/v4/projects/{REPO.replace('/', '%2F')}/releases/permalink/latest"
+RELEASES_PAGE = f"https://{HOST}/{REPO}/-/releases"
+UA = {"User-Agent": f"Mithlond/{__version__}", "Accept": "application/json"}
+SUMS = "SHA256SUMS"
 
 
 class UpdateError(Exception):
@@ -54,29 +56,55 @@ def arch() -> str:
     return {"amd64": "x86_64", "arm64": "aarch64"}.get(m, m)
 
 
-def parse_release(data: dict) -> Release:
+def _links(data: dict) -> list[dict]:
+    return [ln for ln in (data.get("assets") or {}).get("links") or [] if ln.get("name")]
+
+
+def _url(link: dict) -> str:
+    return link.get("direct_asset_url") or link.get("url") or ""
+
+
+def parse_sums(text: str) -> dict[str, str]:
+    """`sha256sum` output: '<hex>  <name>' (or '<hex> *<name>') per line."""
+    out = {}
+    for line in text.splitlines():
+        m = re.match(r"([0-9a-fA-F]{64})\s+\*?(.+?)\s*$", line)
+        if m:
+            out[m.group(2)] = m.group(1).lower()
+    return out
+
+
+def parse_release(data: dict, sums: dict[str, str] | None = None) -> Release:
+    """A GitLab release (GET /projects/:id/releases/...) plus the parsed SHA256SUMS of that release."""
     tag = data.get("tag_name") or ""
-    asset = next((a for a in data.get("assets", [])
-                  if a.get("name", "").endswith(f"-{arch()}.AppImage")), None)
-    digest = (asset or {}).get("digest") or ""
+    asset = next((a for a in _links(data) if a["name"].endswith(f"-{arch()}.AppImage")), None)
     return Release(
-        version=tag.lstrip("vV"), tag=tag, notes=(data.get("body") or "").strip(),
-        page=data.get("html_url") or RELEASES_PAGE,
-        asset_name=asset["name"] if asset else None, asset_url=asset["browser_download_url"] if asset else None,
-        asset_size=int(asset.get("size") or 0) if asset else 0,
-        sha256=digest.split(":", 1)[1] if digest.startswith("sha256:") else None,
+        version=tag.lstrip("vV"), tag=tag, notes=(data.get("description") or "").strip(),
+        page=(data.get("_links") or {}).get("self") or RELEASES_PAGE,
+        asset_name=asset["name"] if asset else None, asset_url=_url(asset) if asset else None,
+        asset_size=0, sha256=(sums or {}).get(asset["name"]) if asset else None,
     )
 
 
 def latest_release(timeout: float = 15) -> Release:
     try:
         r = requests.get(API, headers=UA, timeout=timeout)
-        if r.status_code == 403 and "rate limit" in r.text.lower():
-            raise UpdateError("GitHub's hourly limit for update checks was reached; try again later.")
         r.raise_for_status()
-        return parse_release(r.json())
+        data = r.json()
+        sums = None
+        link = next((a for a in _links(data) if a["name"] == SUMS), None)
+        if link:
+            s = requests.get(_url(link), headers=UA, timeout=timeout)
+            s.raise_for_status()
+            sums = parse_sums(s.text)
+        rel = parse_release(data, sums)
+        if rel.asset_url:  # GitLab's release links carry no size
+            h = requests.head(rel.asset_url, headers=UA, timeout=timeout, allow_redirects=True)
+            if h.ok:
+                rel.asset_size = int(h.headers.get("Content-Length") or 0)
+        return rel
     except (requests.RequestException, ValueError) as e:
-        raise UpdateError(f"Couldn't check GitHub for updates: {e}") from e
+        raise UpdateError(f"Couldn't check {HOST} for updates: {e}") from e
 
 
 def running_appimage() -> Path | None:
@@ -128,7 +156,7 @@ def update(release: Release, progress: Callable[[int, int], None] | None = None,
         if release.asset_size and part.stat().st_size != release.asset_size:
             raise UpdateError("The download is incomplete; the update was cancelled.")
         if release.sha256 and sha.hexdigest() != release.sha256:
-            raise UpdateError("The download doesn't match GitHub's checksum; the update was cancelled.")
+            raise UpdateError("The download doesn't match the release's checksum; the update was cancelled.")
         _check_appimage(part)
         part.chmod(0o755)
         part.replace(target)
